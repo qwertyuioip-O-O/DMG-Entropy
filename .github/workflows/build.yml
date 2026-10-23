@@ -1,0 +1,41 @@
+name: Build and regression tests
+
+on:
+  push:
+    branches: [main, chore/organize-development-tools]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  linux:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check Python syntax
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          for path in Path('tools').rglob('*.py'):
+              compile(path.read_text(), str(path), 'exec')
+          PY
+      - name: Configure
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+      - name: Build all CMake targets
+        run: cmake --build build --parallel 2
+      - name: Run codec regression tests
+        run: ctest --test-dir build --output-on-failure --parallel 2 --timeout 600
+      - name: Check measurement guard
+        run: python3 tools/validation/test_goal10_measurement_guard.py --out build/measurement-guard.json
+      - name: Check generated table implementations
+        run: |
+          python3 tools/validation/test_goal10_read.py
+          python3 tools/validation/test_goal10_magic.py
+          python3 tools/validation/test_goal10_guard.py
+      - name: Build current portable codec
+        run: python3 tools/build/build_r19_current.py --out build-current
+      - name: Check current codec round trip
+        run: |
+          build-current/g10static eval examples/italian-opening.uci builtin 0,3
