@@ -12,6 +12,23 @@ DMG-Entropy models legal moves as they are played and entropy-codes the resultin
 
 > **Current focus:** portable encoding and decoding speed, measured on ordinary, elite, and uniformly random legal games. This is research software, not yet a drop-in replacement for general PGN archives.
 
+### Latest recommended model
+
+**R19 mode3, using the `g10static` portable build**, is the selected model/build combination in the [2026-10-23 three-cohort evaluation](docs/benchmarks/README-Cohorts-20261023-KO.md).
+
+- [Build entry point](tools/build/build_r19_current.py) — builds the `g10static` executable with GCC and Python 3.
+- [Model implementation](tools/native/r19_g10index_model.hpp) and [fixed R19 prior coefficients](src/generated/dmt19_prior.hpp).
+- [Current speed baseline](docs/benchmarks/CURRENT-SPEED-BASELINE.md) — build selection, measurements and limitations.
+
+Build and check this version from the repository root:
+
+```sh
+python3 tools/build/build_r19_current.py --out build-current
+./build-current/g10static eval examples/italian-opening.uci builtin 3
+```
+
+Here `3` selects R19 mode3 and `builtin` selects its built-in prior. The CMake instructions below build the core CLI and compatibility tests; use the entry point above for the selected portable research build.
+
 ### What it stores
 
 The codec preserves standard chess move sequences, including move order, game boundaries, castling, en passant, and promotion. It does **not** preserve PGN tags, comments, variations, whitespace or formatting, or arbitrary starting positions/FENs. It is not a PGN parser or a search-ready opening-book format.
@@ -78,6 +95,23 @@ A project-level license has not been specified in this repository yet.
 DMG-Entropy는 체스에서 가능한 합법 수를 진행 순서에 따라 모델링하고, 그 수순을 엔트로피 부호화합니다. 이 저장소에는 버전별 압축 형식, 호환성 테스트, 재현 가능한 도구와 연구 보고서가 포함되어 있습니다.
 
 > **현재 연구 초점:** 일반인 기보, 상위권 선수 기보, 합법 수 중 무작위로 생성한 기보에서 인코딩·디코딩 속도를 측정합니다. 범용 PGN 압축기를 대체하는 완성품이 아니라 연구용 소프트웨어입니다.
+
+### 최신 권장 모델
+
+**현재 권장 모델은 R19 mode3이며, 선택된 이식성 중심 빌드는 `g10static`입니다.** [2026-10-23 세 코호트 평가](docs/benchmarks/README-Cohorts-20261023-KO.md)에 사용한 조합입니다.
+
+- [빌드 진입점](tools/build/build_r19_current.py) — GCC와 Python 3으로 `g10static` 실행 파일을 만듭니다.
+- [모델 구현](tools/native/r19_g10index_model.hpp)과 [고정 R19 사전 계수](src/generated/dmt19_prior.hpp).
+- [현재 속도 기준선](docs/benchmarks/CURRENT-SPEED-BASELINE.md) — 빌드 선택 근거, 측정 결과와 한계입니다.
+
+저장소 루트에서 다음 명령으로 이 버전을 빌드하고 확인합니다.
+
+```sh
+python3 tools/build/build_r19_current.py --out build-current
+./build-current/g10static eval examples/italian-opening.uci builtin 3
+```
+
+`3`은 R19 mode3, `builtin`은 내장 사전 계수를 선택합니다. 아래 CMake 명령은 기본 CLI와 호환성 테스트를 빌드합니다. 선택된 이식성 중심 연구 빌드는 위 진입점을 사용하세요.
 
 ### 저장하는 데이터
 
