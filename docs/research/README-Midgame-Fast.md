@@ -28,7 +28,7 @@ ctest --test-dir build --output-on-failure
 This environment could not retrieve the public PGN export, **so no independent human corpus was evaluated**. The following reproducible pipeline is included for when a new PGN is available:
 
 ```bash
-python3 tools/prepare_pgn.py unseen_games.pgn independent.uci-bundle \
+python3 tools/data-preparation/prepare_pgn.py unseen_games.pgn independent.uci-bundle \
   --converter "$(pwd)/build/san_to_uci" --limit 250 --min-plies 40
 ./build/dmg_mid_speed 0 --bundle independent.uci-bundle
 ./build/dmg_mid_speed 14 --bundle independent.uci-bundle

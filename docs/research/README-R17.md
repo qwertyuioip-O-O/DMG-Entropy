@@ -74,13 +74,13 @@ mode0 payload는 실제 R16 strong과 비트 단위로 같지만 도구의 래�
 Python3와 g++ C++20으로 빌드한다. 학습 재현에만 NumPy/SciPy, PGN 재준비에만 python-chess가 추가로 필요하다.
 
 ```bash
-python3 tools/build_r17.py --out build-r17
+python3 tools/build/build_r17.py --out build-r17
 build-r17/r17_prior pack data-r17/heldout.uci-bundle builtin 2 result.d17
 build-r17/r17_prior unpack result.d17 builtin decoded.uci-bundle
 build-r17/r17_prior test benchmarks-r4/human4.uci-bundle builtin
-python3 tools/reproduce_r17.py --out build-r17 --blocks --timing
+python3 tools/reproduction/reproduce_r17.py --out build-r17 --blocks --timing
 # 선택 사항: 기존 dev만 다시 추출해 학습
-python3 tools/reproduce_r17.py --out build-r17 --retrain
+python3 tools/reproduction/reproduce_r17.py --out build-r17 --retrain
 ```
 
 재현 스크립트 자체의 전체 재실행은 하지 않았으며, 최종 빌드/표/검사/블록/속도는 같은 명령을 순서대로 직접 실행했다. 학습은 SciPy 버전에 따라 마지막 반올림이 달라질 수 있어 frozen 모델과 training.json의 해시를 기준으로 비교한다.

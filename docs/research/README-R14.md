@@ -101,7 +101,7 @@ speed-summary.json, speed-select.csv, speed-heldout.csv에 있다.
 ## 사용과 포맷
 
 ```bash
-python3 tools/build_r14.py --out build-r14
+python3 tools/build/build_r14.py --out build-r14
 build-r14/dmg_mid pack r14-pawn-rook sample.dmt game1.uci game2.uci
 build-r14/dmg_mid unpack sample.dmt restored
 ```
@@ -129,7 +129,7 @@ features0/rate4/structure95는 R13/mask95와 payload가 같고 헤더만2byte �
 모든 길이의 잘린 입력 거부를 포함한다.
 
 ```bash
-python3 tools/reproduce_r14.py --out build-r14 --full --timing
+python3 tools/reproduction/reproduce_r14.py --out build-r14 --full --timing
 ```
 
 g++ C++20과 Python 표준 라이브러리로 빌드/스냅샷 검증을 수행한다.

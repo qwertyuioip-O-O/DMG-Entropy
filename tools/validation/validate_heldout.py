@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Held-out, deterministic, byte-for-byte chess UCI codec comparison.
 
-Run from project root: python3 tools/validate_heldout.py --binary build/rmc
+Run from project root: python3 tools/validation/validate_heldout.py --binary build/rmc
 No Python packages needed. Source games in examples/heldout/ are public, manually
 transcribed, and checked with the project's legal-move-aware SAN converter.
 """

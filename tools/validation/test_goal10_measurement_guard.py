@@ -13,7 +13,7 @@ with tempfile.TemporaryDirectory() as temp:
   f=d/'timings.csv'
   with f.open('w') as stream:w=csv.DictWriter(stream,fieldnames=rows[0]);w.writeheader();w.writerows(rows)
   before=hashlib.sha256(f.read_bytes()).hexdigest()
-  run=subprocess.run(['python3',str(r/'tools/audit_goal10_measurements.py'),'--dir',str(d),'--strict'],capture_output=True,text=True)
+  run=subprocess.run(['python3',str(r/'tools/analysis/audit_goal10_measurements.py'),'--dir',str(d),'--strict'],capture_output=True,text=True)
   assert run.returncode==expected,(name,run.stdout,run.stderr)
   q=json.loads((d/'measurement-quality.json').read_text());assert q['rows_removed']==0 and q['rows_preserved']==4
   assert hashlib.sha256(f.read_bytes()).hexdigest()==before

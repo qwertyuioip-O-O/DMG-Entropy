@@ -4,11 +4,11 @@ This isolated candidate extends the attack-union implementation. Previously, if 
 
 For a fixed square, the eight directional rays do not overlap. Consequently replacing `(old_mask & ~full_ray) | new_ray` preserves the other directional contributions exactly. This operation is applied to one piece's mask before merging masks of different pieces; overlap between different pieces is preserved. Captures on a still-occupied destination do not alter its blocker status. En passant and castling retain all occupancy-delta bits. No learned model, weight quantization, archive field or observation order changes.
 
-`tools/generate_r19_rays.py` deterministically produces isolated sources from the retained attack-union snapshot. The frozen original R19, direct-output baseline and attack-union sources are kept intact.
+`tools/generation/generate_r19_rays.py` deterministically produces isolated sources from the retained attack-union snapshot. The frozen original R19, direct-output baseline and attack-union sources are kept intact.
 
 ## Correctness
 
-`tools/test_r19_rays.cpp` compares the entire updated attack mask and all relation flags against full recomputation. Its special-position, two-ply expansion and seeded random-walk checks passed 102,324 candidate comparisons, including 440 castlings, 8 en-passants and 684 promotions. Counts refer to compared candidates, not unique positions. The baseline is the independent full `AttackCache` and the no-reuse relation path, rather than the previous incremental implementation alone.
+`tools/native/test_r19_rays.cpp` compares the entire updated attack mask and all relation flags against full recomputation. Its special-position, two-ply expansion and seeded random-walk checks passed 102,324 candidate comparisons, including 440 castlings, 8 en-passants and 684 promotions. Counts refer to compared candidates, not unique positions. The baseline is the independent full `AttackCache` and the no-reuse relation path, rather than the previous incremental implementation alone.
 
 The CLI comparison also packs all five modes on all three datasets with all three implementations, checks exact archive-byte identity, and checks each pack's own roundtrip. The new candidate runs the existing 1,226-check suite, including malformed inputs, CRC, truncation, wrong model, empty streams, LUT invariants and R18 payload identity.
 
@@ -27,13 +27,13 @@ These are actual CLI wall-time phase measurements, using standard uninstrumented
 ## Reproduce
 
 ```sh
-python3 tools/build_r19_inplace.py --out build-r19-inplace
-python3 tools/build_r19_attacks.py --out build-r19-attacks
-python3 tools/build_r19_rays.py --out build-r19-rays
-python3 tools/benchmark_r19_rays.py --baseline build-r19-inplace/r19_inplace --attacks build-r19-attacks/r19_attacks --candidate build-r19-rays/r19_rays --out fresh-rays-study
+python3 tools/build/build_r19_inplace.py --out build-r19-inplace
+python3 tools/build/build_r19_attacks.py --out build-r19-attacks
+python3 tools/build/build_r19_rays.py --out build-r19-rays
+python3 tools/benchmarking/benchmark_r19_rays.py --baseline build-r19-inplace/r19_inplace --attacks build-r19-attacks/r19_attacks --candidate build-r19-rays/r19_rays --out fresh-rays-study
 ```
 
-Compile `tools/test_r19_rays.cpp` with the standard flags, include path and `rmc.o` to reproduce the standalone attack-mask oracle. Source diffs, hashes, validation output and raw timing rows are included under `benchmarks-r19-rays-20261023/`.
+Compile `tools/native/test_r19_rays.cpp` with the standard flags, include path and `rmc.o` to reproduce the standalone attack-mask oracle. Source diffs, hashes, validation output and raw timing rows are included under `benchmarks-r19-rays-20261023/`.
 
 ## Measured outcome
 

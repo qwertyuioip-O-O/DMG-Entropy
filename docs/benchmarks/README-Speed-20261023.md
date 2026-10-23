@@ -51,11 +51,11 @@ This control shows that equivalent model/payload behavior did not provide an equ
 From the project root, choose a fresh output directory:
 
 ```sh
-python3 tools/build_r18.py --out build-r18
-python3 tools/build_r19.py --out build-r19 --paired
-python3 tools/benchmark_r19_extended.py --binaries build-r19 --r18 build-r18/r18_prior --out speed-study-new
-python3 tools/summarize_r19_extended.py speed-study-new
-python3 tools/benchmark_r19_reference_control.py speed-study-new
+python3 tools/build/build_r18.py --out build-r18
+python3 tools/build/build_r19.py --out build-r19 --paired
+python3 tools/benchmarking/benchmark_r19_extended.py --binaries build-r19 --r18 build-r18/r18_prior --out speed-study-new
+python3 tools/reporting/summarize_r19_extended.py speed-study-new
+python3 tools/benchmarking/benchmark_r19_reference_control.py speed-study-new
 ```
 
 The existing results use the binary paths and hashes recorded in the protocol, rather than claiming that later rebuilds have identical performance. Prior compression evidence remains in `README-R19.md`; this study does not repeat or broaden its validation scope.

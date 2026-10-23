@@ -8,7 +8,7 @@ A DMT2 experimental codec extends the exact byte-compatible accelerated DMT1 cod
 
 - Human developer 23: 23 games, 1,718 plies (opening 550, middlegame 893, endgame 275), sorted file names. All three phase boundaries are computed from live game context, **not** from independently encoded FEN fragments.
 - Human developer 4: 4 previously used games, 496 plies; *not* independent evaluation.
-- Random legal stress: 48 deterministic randomly selected legal-move games, 4,607 plies, seed 20261021, generated in `tools/random_corpus.cpp`. This tests robustness, **not human generalization**.
+- Random legal stress: 48 deterministic randomly selected legal-move games, 4,607 plies, seed 20261021, generated in `tools/native/random_corpus.cpp`. This tests robustness, **not human generalization**.
 - Three archive-order changes on the original 23 games. The codec's online state learns across games, so order can matter.
 - Every row in the CSV is an actual encoded file, decoded with the matching profile, and checked for exact move-sequence equality.
 
@@ -49,7 +49,7 @@ This is a consistency check over the *same selected games*, not an independent c
 
 ## Codec implementation
 
-Source: `src/entropy.cpp`, API in `include/dmg_mid.hpp`, runner `tools/mid_cli.cpp`, benchmarks in `tools/bench_mid.cpp` and `tools/mid_speed.cpp`.
+Source: `src/entropy.cpp`, API in `include/dmg_mid.hpp`, runner `tools/native/mid_cli.cpp`, benchmarks in `tools/native/bench_mid.cpp` and `tools/native/mid_speed.cpp`.
 
 - DMT1 profiles 0–16 retain the original magic `DMT1`, original CDF/learning/packing semantics, and original golden bytes. DMG8/DMG7/DMG6 and previous-format decoders are unchanged.
 - DMT2 profiles 17–32 use magic `DMT2` with a byte encoding the model profile; unknown version or profile is rejected. The arithmetic coder, game framing and CRC32 remain as in DMT1, but probability or learned state differs.
@@ -63,7 +63,7 @@ This is a **developer-corpus model search**, and the selected profile may be opt
 
 ## Throughput (cold archives, single-thread Release -O3)
 
-The benchmark runner `tools/mid_speed.cpp` performs 7 trials, 8 repeated cold-state encodes and decodes per trial, returns the median separately for encoding and decoding. Text input parsing and file I/O are excluded. CPU shown in this runtime was an AMD EPYC 9V74 shared virtual machine; CPU affinity was not pinned.
+The benchmark runner `tools/native/mid_speed.cpp` performs 7 trials, 8 repeated cold-state encodes and decodes per trial, returns the median separately for encoding and decoding. Text input parsing and file I/O are excluded. CPU shown in this runtime was an AMD EPYC 9V74 shared virtual machine; CPU affinity was not pinned.
 
 | Dataset | Model | Encode plies/s | Decode plies/s |
 |---|---|---:|---:|
@@ -98,7 +98,7 @@ ctest --test-dir build --output-on-failure
 ./build/dmg_mid_bench --bundle random.uci-bundle > random-all-phases.csv
 ```
 
-Full profiling matrices and deterministic random UCI bundle are included under `benchmarks-r2/`. Do not use the old 23 and 4 human games as an untouched test set; obtain new standard human PGNs and convert them with `tools/prepare_pgn.py`. Neither the historical games nor random games substitute for genuinely new human testing.
+Full profiling matrices and deterministic random UCI bundle are included under `benchmarks-r2/`. Do not use the old 23 and 4 human games as an untouched test set; obtain new standard human PGNs and convert them with `tools/data-preparation/prepare_pgn.py`. Neither the historical games nor random games substitute for genuinely new human testing.
 
 ## Decision
 

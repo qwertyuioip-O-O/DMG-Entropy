@@ -163,7 +163,7 @@ CDF 총합은 양자화 내림 때문에 항상16384인 것이 아니므로 단�
 ## 사용
 
 ```bash
-python3 tools/build_r16.py --out build-r16
+python3 tools/build/build_r16.py --out build-r16
 
 # 기존252 예측 그대로, 검증된 기본 계산 경로 사용
 build-r16/dmg_mid pack r14-pawn-rook unchanged.dmt game1.uci game2.uci
@@ -204,7 +204,7 @@ CRC·유효 CRC의 잘못된 설정/version 및 모든 길이의 잘린 입력 �
 포함했다. 원래508건 검사와 최종 커널 검사는 JSON/로그에서 별도로 구분한다.
 
 ```bash
-python3 tools/reproduce_r16.py --out build-r16 --full --timing
+python3 tools/reproduction/reproduce_r16.py --out build-r16 --full --timing
 ```
 
 g++ C++20과 Python 표준 라이브러리를 사용한다. 최초 PGN 정제에만

@@ -31,13 +31,13 @@ A separate one-pass 17-profile matrix gave all-tactics-guard **82,279 → 87,745
 - Built with `-DDMT_VERIFY_FAST=ON`, compared every fast reverse-attacker and destination-threat query with the original C++ oracle while running the existing suite: all **7/7 CTest** passed.
 - The 23-game **golden** output matches byte for byte: SHA256 `ab0d07509453a1cc7a175777410365ed0120393d41216ca19fb4be396a643128` (883 bytes).
 - Across **all 17** model profiles, payload bit counts, full byte lengths, and per-phase log loss were identical in paired 23-game benchmarks (51 phase rows); the golden test and identical SHA additionally confirm actual byte equality for the recommended profile.
-- 48 new deterministic *random-legal* games, **4607 plies**, seeds and generator in `tools/random_corpus.cpp`: original and fast archives byte-identical for SEE, all-tactics-guard, all-fast. They are stress tests, **not human compression evaluation**.
+- 48 new deterministic *random-legal* games, **4607 plies**, seeds and generator in `tools/native/random_corpus.cpp`: original and fast archives byte-identical for SEE, all-tactics-guard, all-fast. They are stress tests, **not human compression evaluation**.
 - ASan/UBSan `dmg_mid_tests` passed with `ASAN_OPTIONS=detect_leaks=0` and verification enabled.
 - Old DMT1 encoder/decoder remains readable; old DMG8 streams and other legacy format decoders are unchanged.
 
 ### Independent human dataset: outstanding
 
-The official Lichess public-rated-game PGN archives were located at https://database.lichess.org/standard/ , but this execution environment could not download the archive. **There is no independent human-game generalization measurement in this run.** The provided `tools/prepare_pgn.py` enables a reproducible future PGN→standard/legal UCI dataset conversion, with source SHA256 and filter audit. The current 23 historical/modern games and the other 4 previously used human games are **development samples** and must not be relabeled as held-out.
+The official Lichess public-rated-game PGN archives were located at https://database.lichess.org/standard/ , but this execution environment could not download the archive. **There is no independent human-game generalization measurement in this run.** The provided `tools/data-preparation/prepare_pgn.py` enables a reproducible future PGN→standard/legal UCI dataset conversion, with source SHA256 and filter audit. The current 23 historical/modern games and the other 4 previously used human games are **development samples** and must not be relabeled as held-out.
 
 ## Decision
 

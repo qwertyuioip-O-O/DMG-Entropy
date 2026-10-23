@@ -1,3 +1,3 @@
-# Validation and experimental checks
+# Validation
 
-Version-specific validation code. The original top-level Python paths remain compatible launchers.
+Scripts live here; run them from the repository root. See [tool directory guide](../README.md).

@@ -99,13 +99,13 @@
 빌드는 Python3와 g++ C++20이면 된다. 학습 재현에만 NumPy/SciPy, PGN 준비에만 python-chess가 추가로 필요하다.
 
 ```bash
-python3 tools/build_r18.py --out build-r18
+python3 tools/build/build_r18.py --out build-r18
 build-r18/r18_prior pack data-r18/heldout.uci-bundle builtin 9 result.d18
 build-r18/r18_prior unpack result.d18 builtin decoded.uci-bundle
 build-r18/r18_prior test benchmarks-r4/human4.uci-bundle builtin
-python3 tools/reproduce_r18.py --out build-r18 --blocks --controls --timing
+python3 tools/reproduction/reproduce_r18.py --out build-r18 --blocks --controls --timing
 # 선택 사항: dev로만 다시 학습
-python3 tools/reproduce_r18.py --out build-r18 --retrain --controls
+python3 tools/reproduction/reproduce_r18.py --out build-r18 --retrain --controls
 ```
 
 재현 스크립트의 전체 빌드 포함 실행을 한 번에 다시 돌리지는 않았다. 최종 빌드 후 동일 실행 부분을 순서대로 수행했으며, 선택/학습/사후 대조군/실제 파일 검증은 별도로 실행해 로그를 남겼다. SciPy 버전의 마지막 반올림 차이가 있을 수 있으므로 frozen 텍스트와 builtin 해시를 기준으로 비교한다.

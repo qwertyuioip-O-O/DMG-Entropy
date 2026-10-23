@@ -1,6 +1,6 @@
 # Current portable research speed build
 
-Builder: `tools/build_r19_current.py` (routes to `build_goal10_static.py`). Output executable: `g10static`. Fallback builder: `tools/build_goal10_index.py`.
+Builder: `tools/build/build_r19_current.py` (routes to `build_goal10_static.py`). Output executable: `g10static`. Fallback builder: `tools/build/build_goal10_index.py`.
 
 Fixed original anchor SHA256: `7c466d55510493aa2366aa310f50583083a161f88304f64e2941089ca9333918`.
 Selected executable SHA256: `872c463c64bf2b9a9bdcd794eece9d6bbba0246a253ff2985f48c3f468afa0df`.

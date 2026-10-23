@@ -76,4 +76,4 @@ This is a more informative check than the previous **four development games**, b
 4. **Optimize the tactical-check scorer** by caching attacked squares and not re-evaluating duplicate per-move quantities. Current ~0.62Mply/s encode is considerably slower than the initial SMC ~5.87Mply/s.
 5. For production-like benchmarking, use >=10,000 randomly sampled human games across Elo/rating bands, time controls and game stages and give payload/whole-file measurements with paired results.
 
-All raw and reproduced data is included in `results/` with `tools/validate_heldout.py`, and the fixed example SAN/UCI scores and provenance are in `examples/heldout/`.
+All raw and reproduced data is included in `results/` with `tools/validation/validate_heldout.py`, and the fixed example SAN/UCI scores and provenance are in `examples/heldout/`.

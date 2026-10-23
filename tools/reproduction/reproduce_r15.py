@@ -7,8 +7,8 @@ r=Path(__file__).resolve().parents[2];out=Path(args.out).resolve();results=out/'
 def run(command,path=None):
     p=subprocess.run(list(map(str,command)),capture_output=path is not None,text=True,check=True)
     if path:Path(path).write_text(p.stdout)
-run([sys.executable,r/'tools/build_r15.py','--out',out])
-run([sys.executable,r/'tools/audit_r15_data.py'],results/'data-audit.json')
+run([sys.executable,r/'tools/build/build_r15.py','--out',out])
+run([sys.executable,r/'tools/analysis/audit_r15_data.py'],results/'data-audit.json')
 for test in ['dmt_default_tests','dmt12_tests','dmt13_tests','dmt14_tests','dmt15_tests']:
     (out/test).chmod(0o755);run([out/test],results/(test+'.log'))
 if args.full:
@@ -23,7 +23,7 @@ if args.full:
         run([out/'r15_matrix',name,r/bundle,'7:4,0:1'],results/f'regression-{name}.csv')
     ref=r/'reference-r14';flags=['g++','-std=c++20','-O3','-DNDEBUG','-DDMT_FAST_TACTICAL','-DDMT_FEATURE_LUT','-I'+str(ref/'include')]
     for name in ['entropy','rmc']:run(flags+['-c',ref/f'src/{name}.cpp','-o',out/f'reference-{name}.o'])
-    exe=out/'reference-audit';run(flags+[r/'tools/dmt11_audit.cpp',out/'reference-entropy.o',out/'reference-rmc.o','-o',exe]);exe.chmod(0o755)
+    exe=out/'reference-audit';run(flags+[r/'tools/native/dmt11_audit.cpp',out/'reference-entropy.o',out/'reference-rmc.o','-o',exe]);exe.chmod(0o755)
     count=0
     for name,bundle in [('human23','benchmarks-r4/human23.uci-bundle'),('random48','benchmarks-r2/random48.uci-bundle')]:
         old=out/('old-'+name);new=out/('new-'+name);run([exe,r/bundle,old,253]);run([out/'dmt11_audit',r/bundle,new,253])
@@ -31,8 +31,8 @@ if args.full:
     (results/'compatibility.json').write_text(json.dumps({'byte_identical':count}))
     for selector,name in [('252','baseline'),('7:1','rate1'),('7:4','candidate')]:
         run([out/'r15_loss_trace',selector,r/'data-r13/dev.uci-bundle',results/f'dev-loss-{name}.csv'])
-    run([sys.executable,r/'tools/analyze_r15_losses.py','--directory',results])
+    run([sys.executable,r/'tools/analysis/analyze_r15_losses.py','--directory',results])
 if args.timing:
     for name,bundle in [('select','data-r13/select.uci-bundle'),('heldout','data-r15/heldout.uci-bundle')]:run([out/'r15_paired_speed',r/bundle],results/f'speed-{name}.csv')
-run([sys.executable,r/'tools/summarize_r15.py','--directory',results])
+run([sys.executable,r/'tools/reporting/summarize_r15.py','--directory',results])
 print('PASS; results:',results)
