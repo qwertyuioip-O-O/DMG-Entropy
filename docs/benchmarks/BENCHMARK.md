@@ -20,7 +20,7 @@ Default: all three held-out bundles, mode 3, four alternating ABBA/BAAB blocks p
 python3 tools/benchmark_r19.py --out benchmark-smoke --rounds 1 --batch 1 --cpu 1
 ```
 
-This is 12 native calls. Use it to verify the runner and data, not to establish a performance gain. The included `benchmarks-r19-runner-smoke-20261023` is this check; the earlier accepted study remains in `benchmarks-goal10-static-20261023/confirmation-batched-cpu1`.
+This is 12 native calls. Use it to verify the runner and data, not to establish a performance gain. The included `benchmarks-r19-runner-smoke-20261023` is this check; the earlier accepted study remains in `benchmarks/goal10-static-20261023/confirmation-batched-cpu1`.
 
 ## Rebuild or supply your own inputs
 

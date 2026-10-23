@@ -69,4 +69,4 @@ python3 tools/confirm_goal10_batches.py --baseline benchmarks-goal10-20261023/an
 python3 tools/audit_goal10_batches.py --dir fresh-confirmation
 ```
 
-Selected executable: benchmarks-goal10-static-20261023/selected/g10static. Fallback: tools/build_goal10_index.py. General pack profile234 remains the separate model default.
+Selected executable: benchmarks/goal10-static-20261023/selected/g10static. Fallback: tools/build_goal10_index.py. General pack profile234 remains the separate model default.

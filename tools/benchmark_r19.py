@@ -10,7 +10,7 @@ def write_csv(path,rows):
 def main():
  p=argparse.ArgumentParser(description=__doc__)
  p.add_argument('--baseline',type=Path,default=ROOT/'benchmarks-goal10-20261023/anchor/r19_scratch')
- p.add_argument('--candidate',type=Path,default=ROOT/'benchmarks-goal10-static-20261023/selected/g10static')
+ p.add_argument('--candidate',type=Path,default=ROOT/'benchmarks/goal10-static-20261023/selected/g10static')
  p.add_argument('--dataset',action='append',metavar='LABEL=PATH',help='Repeat to override the three bundled held-out sets')
  p.add_argument('--out',type=Path,required=True);p.add_argument('--rounds',type=int,default=4);p.add_argument('--batch',type=int,default=2)
  p.add_argument('--cpu',type=int);p.add_argument('--mode',type=int,choices=range(5),default=3)

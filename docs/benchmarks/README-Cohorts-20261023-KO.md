@@ -48,4 +48,4 @@ python3 tools/audit_cohort_inputs.py
 python3 tools/evaluate_cohorts.py --phase build-cohort-phase/cohort_phase --out fresh-cohort-results --cpu 1
 ```
 
-준비 과정, 원본 출처/해시와 제외 통계는 data-cohorts-20261023에 있다. 상세 속도 구간과 원시 값은 benchmarks-cohorts-20261023/summary.json, native.csv, phase.csv, independent-audit.json에 있다. 이미 본 결과를 토대로 모델을 수정하면 이 자료는 이후 회귀 자료이며 새로운 독립 검증 자료는 아니다.
+준비 과정, 원본 출처/해시와 제외 통계는 data-cohorts-20261023에 있다. 상세 속도 구간과 원시 값은 benchmarks/cohorts-20261023/summary.json, native.csv, phase.csv, independent-audit.json에 있다. 이미 본 결과를 토대로 모델을 수정하면 이 자료는 이후 회귀 자료이며 새로운 독립 검증 자료는 아니다.

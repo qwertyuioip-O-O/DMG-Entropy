@@ -9,4 +9,4 @@ Fresh CPU1 confirmation: encode **+10.938466%**, decode **+10.146912%** against 
 
 The CPU0 single-call screen passes its original 1.25 range gate and is +2.674355% encode / +2.904227% decode versus the previous g10index. Additional immutable attack payload: 841 KiB. No native CPU target or optional ISA is required; other physical CPUs were not tested.
 
-Full results, validation and prior rejected attempts: [README-Goal10-Magic-Static-20261023.md](README-Goal10-Magic-Static-20261023.md).
+Full results, validation and prior rejected attempts: [README-Goal10-Magic-Static-20261023.md](../research/README-Goal10-Magic-Static-20261023.md).

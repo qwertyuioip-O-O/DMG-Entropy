@@ -8,7 +8,7 @@ def csvwrite(p,rows):
  with p.open('w',newline='') as f:
   w=csv.DictWriter(f,fieldnames=rows[0]);w.writeheader();w.writerows(rows)
 def main():
- p=argparse.ArgumentParser();p.add_argument('--data',type=Path,default=ROOT/'data-cohorts-20261023');p.add_argument('--out',type=Path,required=True);p.add_argument('--native',type=Path,default=ROOT/'benchmarks-goal10-static-20261023/selected/g10static');p.add_argument('--phase',type=Path,required=True);p.add_argument('--cpu',type=int,default=1);a=p.parse_args()
+ p=argparse.ArgumentParser();p.add_argument('--data',type=Path,default=ROOT/'data-cohorts-20261023');p.add_argument('--out',type=Path,required=True);p.add_argument('--native',type=Path,default=ROOT/'benchmarks/goal10-static-20261023/selected/g10static');p.add_argument('--phase',type=Path,required=True);p.add_argument('--cpu',type=int,default=1);a=p.parse_args()
  data=a.data.resolve();out=a.out.resolve();native=a.native.resolve();phase=a.phase.resolve()
  if out.exists() and any(out.iterdir()):p.error('output must be empty/new')
  policy=json.loads((data/'precommit.json').read_text());assert sha(native)==policy['binary_sha256'];os.sched_setaffinity(0,{a.cpu});out.mkdir(parents=True,exist_ok=True)

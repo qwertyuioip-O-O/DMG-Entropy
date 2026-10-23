@@ -30,7 +30,7 @@ The latest three-cohort evaluation covers **15,000 games and 2,547,354 plies** (
 
 Measurements were run on one pinned logical CPU on an AMD EPYC 9V74 host. Results depend on the corpus, host, compiler, and CLI measurement path; they are not universal performance claims. The random cohort is a diagnostic distribution, not a proxy for human games.
 
-See the [full cohort benchmark report](README-Cohorts-20261023-KO.md) for cohort definitions, data handling, commands, and limitations. The [current speed baseline](CURRENT-SPEED-BASELINE.md) documents the selected build and confirmation protocol. Compression figures include archive framing; older payload-only bits-per-ply figures are not directly comparable.
+See the [full cohort benchmark report](docs/benchmarks/README-Cohorts-20261023-KO.md) for cohort definitions, data handling, commands, and limitations. The [current speed baseline](docs/benchmarks/CURRENT-SPEED-BASELINE.md) documents the selected build and confirmation protocol. Compression figures include archive framing; older payload-only bits-per-ply figures are not directly comparable.
 
 ### Download and build
 
@@ -52,7 +52,7 @@ The repository contains source code, tests, examples, benchmark tools, and selec
 - **Benchmark tools and reports** — cohort-level compression and speed measurements, plus controlled optimization experiments.
 - **Research history** — model and implementation variants, including rejected candidates and measured trade-offs.
 
-Start with the [cohort benchmark report](README-Cohorts-20261023-KO.md), then consult dated experiment reports for implementation details.
+Start with the [cohort benchmark report](docs/benchmarks/README-Cohorts-20261023-KO.md), then consult dated experiment reports for implementation details.
 
 ### Scope and limitations
 
@@ -95,7 +95,7 @@ DMG-Entropy는 체스에서 가능한 합법 수를 진행 순서에 따라 모�
 
 측정은 AMD EPYC 9V74 호스트에서 논리 CPU 하나를 고정해 수행했습니다. 결과는 사용한 기보, 호스트, 컴파일러와 CLI 측정 방식에 따라 달라지며 모든 환경에서 같은 성능을 보장하지 않습니다. 무작위 기보는 진단용 분포이며 인간의 기보를 대표하지 않습니다.
 
-코호트 정의, 데이터 처리, 실행 명령과 한계는 [전체 벤치마크 보고서](README-Cohorts-20261023-KO.md)를 참고하세요. 선택된 빌드와 확인 절차는 [현재 속도 기준선](CURRENT-SPEED-BASELINE.md)에 정리되어 있습니다. 표의 압축률은 아카이브 프레이밍을 포함합니다. 과거 보고서의 페이로드만 계산한 비트/반수 수치와는 직접 비교할 수 없습니다.
+코호트 정의, 데이터 처리, 실행 명령과 한계는 [전체 벤치마크 보고서](docs/benchmarks/README-Cohorts-20261023-KO.md)를 참고하세요. 선택된 빌드와 확인 절차는 [현재 속도 기준선](docs/benchmarks/CURRENT-SPEED-BASELINE.md)에 정리되어 있습니다. 표의 압축률은 아카이브 프레이밍을 포함합니다. 과거 보고서의 페이로드만 계산한 비트/반수 수치와는 직접 비교할 수 없습니다.
 
 ### 다운로드 및 빌드
 
@@ -117,7 +117,7 @@ ctest --test-dir build --output-on-failure
 - **벤치마크 도구와 보고서** — 코호트별 압축률·속도 측정과 통제된 최적화 실험을 담고 있습니다.
 - **연구 기록** — 채택하지 않은 후보와 측정된 장단점을 포함한 모델·구현 실험입니다.
 
-전체 평가부터 보려면 [코호트 벤치마크 보고서](README-Cohorts-20261023-KO.md)를 확인하고, 구현별 자세한 내용은 날짜가 붙은 실험 보고서를 참고하세요.
+전체 평가부터 보려면 [코호트 벤치마크 보고서](docs/benchmarks/README-Cohorts-20261023-KO.md)를 확인하고, 구현별 자세한 내용은 날짜가 붙은 실험 보고서를 참고하세요.
 
 ### 범위와 한계
 

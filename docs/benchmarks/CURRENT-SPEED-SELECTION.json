@@ -11,7 +11,7 @@
   "goal_achieved": true,
   "cpu_portability": "portable compiler baseline; no march=native or required optional ISA extensions",
   "goal_anchor_builder": "tools/build_r19_scratch.py",
-  "confirmation": "benchmarks-goal10-static-20261023/confirmation-batched-cpu1/summary.json",
+  "confirmation": "benchmarks/goal10-static-20261023/confirmation-batched-cpu1/summary.json",
   "confirmation_scope": "Observed equal-dataset geometric mean phase wall-time point estimates on this host, CPU1; predeclared two-native-call mean units. Individual native-call variation remains; no confidence-bound claim of >=10% and no claim for every dataset or CPU.",
   "latest_attempt": {
     "adopted": true,

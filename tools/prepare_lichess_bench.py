@@ -5,7 +5,7 @@ from pathlib import Path
 import chess
 ROOT=Path(__file__).resolve().parents[1]
 def main():
- p=argparse.ArgumentParser();p.add_argument('--out',type=Path,default=ROOT/'benchmarks-chess-comparison-20261023/san');a=p.parse_args();a.out.mkdir(parents=True,exist_ok=True)
+ p=argparse.ArgumentParser();p.add_argument('--out',type=Path,default=ROOT/'benchmarks/chess-comparison-20261023/san');a=p.parse_args();a.out.mkdir(parents=True,exist_ok=True)
  manifest={}
  for cohort in ('general','elite','random'):
   src=ROOT/f'data-cohorts-20261023/{cohort}/all.uci-bundle';dst=a.out/f'{cohort}.san.txt';games=plies=0

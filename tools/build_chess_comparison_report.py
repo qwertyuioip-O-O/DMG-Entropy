@@ -3,12 +3,12 @@
 import csv,json,platform,subprocess
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
-OUT=ROOT/'benchmarks-chess-comparison-20261023'
+OUT=ROOT/'benchmarks/chess-comparison-20261023'
 def sha(p):
  import hashlib
  return hashlib.sha256(p.read_bytes()).hexdigest()
-coh=json.loads((ROOT/'benchmarks-cohorts-20261023/summary.json').read_text())
-protocol=json.loads((ROOT/'benchmarks-cohorts-20261023/protocol.json').read_text())
+coh=json.loads((ROOT/'benchmarks/cohorts-20261023/summary.json').read_text())
+protocol=json.loads((ROOT/'benchmarks/cohorts-20261023/protocol.json').read_text())
 lichess={r['dataset']:r for r in csv.DictReader((OUT/'lichess-java-currentport/results.csv').open())}
 san=json.loads((OUT/'san/manifest.json').read_text())
 base_txt=(OUT/'lichess-java/source.txt').read_text().strip()
