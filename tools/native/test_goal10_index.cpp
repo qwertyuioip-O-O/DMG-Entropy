@@ -1,5 +1,5 @@
 #define DMT_VERIFY_COUNT
-#include "../../src/entropy_g10index.cpp"
+#include "../../src/experiments/goal10/entropy_g10index.cpp"
 #include <random>
 #include <iostream>
 using namespace rmc;

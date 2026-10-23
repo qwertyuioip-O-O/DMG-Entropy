@@ -26,7 +26,8 @@ python tools/validation/test_goal10_measurement_guard.py --out build/measurement
 bash tools/validation/run_v8_validation.sh
 ```
 
-CMake targets and executable names are unchanged. Codec sources remain in `src/`,
+CMake targets and executable names are unchanged. See the [source layout](../src/README.md)
+for core, experimental and generated files in `src/`;
 public headers in `include/`, C++ regression tests in `tests/`, and published
 benchmark data in `benchmarks/`. Recorded benchmark commands are historical
 provenance and retain the paths used when measurements were taken; use this guide

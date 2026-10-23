@@ -25,10 +25,13 @@ def main():
             if result.returncode:
                 raise RuntimeError(f'{generator.name}: {result.stdout}\n{result.stderr}')
             assert not list((root / 'tools').glob('*.*')), generator.name
-            for source in (root / 'tools/native').iterdir():
+            sources = [*(root / 'tools/native').iterdir(),
+                       *(root / 'src').rglob('*.cpp'), *(root / 'src').rglob('*.hpp')]
+            for source in sources:
                 for include in re.findall(r'#include "([^"]+)"', source.read_text()):
                     assert ((source.parent / include).is_file()
-                            or (root / 'include' / include).is_file()), (
+                            or (root / 'include' / include).is_file()
+                            or (root / 'src' / include).is_file()), (
                                 generator.name, source.name, include)
         print(f'PASS {generator.name}', flush=True)
     print(f'PASS {len(generators)} isolated code generators')

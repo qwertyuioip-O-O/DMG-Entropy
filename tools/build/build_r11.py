@@ -4,7 +4,7 @@ import argparse,subprocess
 from pathlib import Path
 ap=argparse.ArgumentParser();ap.add_argument('--out',default='build-r11');ap.add_argument('--cxx',default='g++');ap.add_argument('--verify-reuse',action='store_true');args=ap.parse_args()
 root=Path(__file__).resolve().parents[2];out=Path(args.out).resolve();out.mkdir(parents=True,exist_ok=True)
-flags=[args.cxx,'-std=c++20','-O3','-DNDEBUG','-DDMT_FAST_TACTICAL','-I'+str(root/'include')]
+flags=[args.cxx,'-std=c++20','-O3','-DNDEBUG','-DDMT_FAST_TACTICAL','-I'+str(root/'include'),'-I'+str(root/'src')]
 if args.verify_reuse:flags+=['-DDMT_VERIFY_REUSE']
 def run(*items):subprocess.run([*flags,*map(str,items)],check=True)
 for name in ['entropy','rmc']:run('-c',root/'src'/f'{name}.cpp','-o',out/f'{name}.o')

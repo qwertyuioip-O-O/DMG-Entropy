@@ -2,7 +2,7 @@
 """Build isolated leaper-union experiment on the frozen direct-output candidate."""
 from pathlib import Path
 r=Path(__file__).resolve().parents[2]
-s=(r/'src/entropy_r19_inplace.cpp').read_text()
+s=(r/'src/experiments/r19/entropy_r19_inplace.cpp').read_text()
 s=s.replace('std::array<uint64_t,64> attacks{},rays{};','std::array<uint64_t,64> attacks{},rays{},without_leaper{};\n    uint64_t leapers=0,leaper_union=0;')
 needle='    uint64_t after(const Position& before,const Position& next)const{'
 start=s.index(needle)
@@ -30,7 +30,7 @@ new='''        uint64_t out=(leapers&bit(move.from))?without_leaper[move.from]:l
             out|=(before.board[sq]!=next.board[sq]||(rays[sq]&changed))?piece_attack(next,sq):attacks[sq];
         }'''
 assert old in s;s=s.replace(old,new).replace('reuse->after(p,after)','reuse->after(p,after,m)')
-(r/'src/entropy_r19_attacks.cpp').write_text(s)
-for old,new,incold,incnew in [('r17_inplace.cpp','r17_attacks.cpp','entropy_r19_inplace.cpp','entropy_r19_attacks.cpp'),('r18_inplace.cpp','r18_attacks.cpp','r17_inplace.cpp','r17_attacks.cpp'),('r19_inplace_model.hpp','r19_attacks_model.hpp','r18_inplace.cpp','r18_attacks.cpp'),('r19_inplace.cpp','r19_attacks.cpp','r19_inplace_model.hpp','r19_attacks_model.hpp')]:
+(r/'src/experiments/r19/entropy_r19_attacks.cpp').write_text(s)
+for old,new,incold,incnew in [('r17_inplace.cpp','r17_attacks.cpp','experiments/r19/entropy_r19_inplace.cpp','experiments/r19/entropy_r19_attacks.cpp'),('r18_inplace.cpp','r18_attacks.cpp','r17_inplace.cpp','r17_attacks.cpp'),('r19_inplace_model.hpp','r19_attacks_model.hpp','r18_inplace.cpp','r18_attacks.cpp'),('r19_inplace.cpp','r19_attacks.cpp','r19_inplace_model.hpp','r19_attacks_model.hpp')]:
  (r/'tools/native'/new).write_text((r/'tools/native'/old).read_text().replace(incold,incnew))
 print('Generated isolated cached-leaper-union candidate')

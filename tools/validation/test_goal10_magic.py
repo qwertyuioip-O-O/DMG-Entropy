@@ -2,10 +2,10 @@
 from pathlib import Path
 import subprocess,tempfile
 r=Path(__file__).resolve().parents[2]
-a=(r/'src/rmc.cpp').read_text();b=(r/'src/rmc_g10magic.cpp').read_text()
+a=(r/'src/rmc.cpp').read_text();b=(r/'src/experiments/goal10/rmc_g10magic.cpp').read_text()
 a=a[a.index('uint64_t sliding('):a.index('unsigned width(')].replace('sliding(','sliding_reference(')
 b=b[b.index('uint64_t sliding('):b.index('unsigned width(')]
-code='#include "goal10_magic_data.hpp"\n#include <array>\n#include <cstdint>\n#include <bit>\n#include <random>\n#include <cassert>\n#include <iostream>\nstruct Position{std::array<int8_t,64> board{};std::array<uint64_t,2> occupied{};};\nuint64_t bit(int s){return uint64_t(1)<<s;}\nint color(int8_t p){return p<0?1:0;}\n'+a+b+r"""
+code='#include "generated/goal10_magic_data.hpp"\n#include <array>\n#include <cstdint>\n#include <bit>\n#include <random>\n#include <cassert>\n#include <iostream>\nstruct Position{std::array<int8_t,64> board{};std::array<uint64_t,2> occupied{};};\nuint64_t bit(int s){return uint64_t(1)<<s;}\nint color(int8_t p){return p<0?1:0;}\n'+a+b+r"""
 int main(){std::mt19937_64 rng(8021);unsigned checks=0;
  auto test=[&](uint64_t white,uint64_t black){
   black&=~white;Position p;p.occupied={white,black};

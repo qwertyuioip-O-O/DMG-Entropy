@@ -1,4 +1,4 @@
-#include "goal10_op_table.hpp"
+#include "experiments/goal10/goal10_op_table.hpp"
 #include "entropy.hpp"
 #include "dmg_v6.hpp"
 #include "dmg_v7.hpp"
@@ -9,7 +9,7 @@
 #include "dmt14_features.hpp"
 #include "dmt15_features.hpp"
 #include "dmt16_features.hpp"
-#include "dmt16_expected.hpp"
+#include "generated/dmt16_expected.hpp"
 #include <unordered_map>
 #include <map>
 #include <deque>
@@ -2876,59 +2876,65 @@ std::array<uint16_t,256> r4_rank_features_reference(const Position& p,const V8St
 }
 
 #endif
-// Portable, fixed feature tables: no processor-specific instructions.
-static constexpr auto rank_center=[](){
-    std::array<int8_t,64> a{};
-    for(int i=0;i<64;++i){int x=2*(i&7)-7,y=2*(i>>3)-7;a[i]=int8_t(((x<0?-x:x)+(y<0?-y:y))/2);}
-    return a;
-}();
-static constexpr auto rank_tactical=[](){
-    std::array<int8_t,1024> a{};
-    for(unsigned f=0;f<a.size();++f)a[f]=int8_t(6*bool(f&1)-6*bool(f&2)+3*bool(f&256)-3*bool(f&512)+4*bool(f&4)+2*bool(f&8)+2*bool(f&64));
-    return a;
-}();
 std::array<uint16_t,256> r4_rank_features_count(const Position& p,const V8Step& base,
                                            const std::array<uint16_t,256>& tactics) {
     std::array<uint16_t,256> flags{};
     std::array<int8_t,256> score;
-    std::array<uint8_t,256> cls,order;
-    std::array<uint16_t,42> count{},offset{};
-    std::array<unsigned,12> class_totals{},class_seen{};
-    const unsigned n=base.moves.size;
+    std::array<uint8_t,256> cls;
+    std::array<uint16_t,42> global{};
+    std::array<std::array<uint16_t,42>,12> histogram{};
+    std::array<unsigned,12> totals{};
+    std::array<int,12> maximum,cutoff;
+    maximum.fill(-16);cutoff.fill(-16);
+    int highest=-16;const unsigned n=base.moves.size;
     for(unsigned i=0;i<n;++i){
-        const auto m=base.moves.a[i].m;
-        const unsigned kind=unsigned(abs_piece(p.board[m.from]));
-        const bool capture=bool(base.flags[i]&(1u<<4));
-        int v=int(rank_center[m.from])-rank_center[m.to];
+        Move m=base.moves.a[i].m;
+        bool capture=bool(base.flags[i]&(1u<<4));
+        int kind=abs_piece(p.board[m.from]);
+        int from_c=std::abs(2*int(m.from&7)-7)+std::abs(2*int(m.from>>3)-7);
+        int to_c=std::abs(2*int(m.to&7)-7)+std::abs(2*int(m.to>>3)-7);
+        int v=(from_c-to_c)/2;
         if(kind==6)v=0;
         if(kind==1)v/=2;
-        v+=3*int(capture)+int(rank_tactical[tactics[i]&1023u]);
+        if(capture)v+=3;
+        if(tactics[i]&(1u<<0))v+=6;
+        if(tactics[i]&(1u<<1))v-=6;
+        if(tactics[i]&(1u<<8))v+=3;
+        if(tactics[i]&(1u<<9))v-=3;
+        if(tactics[i]&(1u<<2))v+=4;
+        if(tactics[i]&(1u<<3))v+=2;
+        if(tactics[i]&(1u<<6))v+=2;
         if(v<-15||v>26)fail("relative rank score outside proven range");
-        score[i]=int8_t(v);cls[i]=uint8_t(2*(kind-1)+capture);
-        ++class_totals[cls[i]];++count[unsigned(v+15)];
+        const unsigned c=unsigned(2*(kind-1)+capture);
+        score[i]=int8_t(v);cls[i]=uint8_t(c);
+        ++global[v+15];++histogram[c][v+15];++totals[c];
+        maximum[c]=std::max(maximum[c],v);highest=std::max(highest,v);
     }
-    unsigned cursor=0;
-    for(int k=41;k>=0;--k){offset[k]=uint16_t(cursor);cursor+=count[k];}
-    for(unsigned i=0;i<n;++i)order[offset[unsigned(score[i]+15)]++]=uint8_t(i);
-    for(unsigned begin=0;begin<n;){
-        unsigned end=begin+1;
-        while(end<n && score[order[end]]==score[order[begin]])++end;
-        for(unsigned j=begin;j<end;++j){
-            const unsigned i=order[j],same_class=class_totals[cls[i]],better_class=class_seen[cls[i]];
-            const bool capture=bool(base.flags[i]&(1u<<4));
-            uint16_t bits=0;
-            if(begin==0)bits|=1u<<0;
-            if(4*begin<=n)bits|=1u<<1;
-            if(better_class==0 && same_class>=2)bits|=1u<<2;
-            if(same_class>=3 && 3*better_class<=same_class)bits|=1u<<3;
-            if(!capture && score[i]>=2)bits|=1u<<4;
-            if(!capture && score[i]<=-2)bits|=1u<<5;
-            if(capture && score[i]>=6)bits|=1u<<6;
-            if(capture && score[i]<=-4)bits|=1u<<7;
-            flags[i]=bits;
+    // Only rank predicates are observed, so no ordered candidate list is needed.
+    int global_cutoff=highest;
+    for(int k=highest,seen=0;k>=-15;--k){
+        seen+=global[k+15];
+        if(unsigned(seen)>n/4){global_cutoff=k;break;}
+    }
+    for(unsigned c=0;c<12;++c)if(totals[c]>=3){
+        for(int k=maximum[c],seen=0;k>=-15;--k){
+            seen+=histogram[c][k+15];
+            if(unsigned(seen)>totals[c]/3){cutoff[c]=k;break;}
         }
-        for(unsigned j=begin;j<end;++j)++class_seen[cls[order[j]]];
-        begin=end;
+    }
+    for(unsigned i=0;i<n;++i){
+        const unsigned c=cls[i];const int v=score[i];
+        const bool capture=bool(base.flags[i]&(1u<<4));
+        uint16_t bits=0;
+        if(v==highest)bits|=1u<<0;
+        if(v>=global_cutoff)bits|=1u<<1;
+        if(v==maximum[c] && totals[c]>=2)bits|=1u<<2;
+        if(totals[c]>=3 && v>=cutoff[c])bits|=1u<<3;
+        if(!capture && v>=2)bits|=1u<<4;
+        if(!capture && v<=-2)bits|=1u<<5;
+        if(capture && v>=6)bits|=1u<<6;
+        if(capture && v<=-4)bits|=1u<<7;
+        flags[i]=bits;
     }
     return flags;
 }

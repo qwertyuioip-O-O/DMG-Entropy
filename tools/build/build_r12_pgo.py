@@ -5,7 +5,7 @@ from pathlib import Path
 ap=argparse.ArgumentParser();ap.add_argument('--out',default='build-r12-pgo');ap.add_argument('--cxx',default='g++');args=ap.parse_args()
 r=Path(__file__).resolve().parents[2];out=Path(args.out).resolve();out.mkdir(parents=True,exist_ok=True);profiles=out/'profiles';profiles.mkdir(exist_ok=True)
 for old in profiles.rglob('*.gcda'):old.unlink()
-flags=[args.cxx,'-std=c++20','-O3','-DNDEBUG','-DDMT_FAST_TACTICAL','-DDMT_FEATURE_LUT','-I'+str(r/'include')]
+flags=[args.cxx,'-std=c++20','-O3','-DNDEBUG','-DDMT_FAST_TACTICAL','-DDMT_FEATURE_LUT','-I'+str(r/'include'),'-I'+str(r/'src')]
 objects=[out/'entropy.o',out/'rmc.o',out/'speed.o'];sources=[r/'src/entropy.cpp',r/'src/rmc.cpp',r/'tools/native/r12_speed.cpp']
 def build(profile_flag):
  for source,obj in zip(sources,objects):subprocess.run(flags+[profile_flag,'-c',str(source),'-o',str(obj)],check=True)

@@ -21,8 +21,8 @@ for name,end in [('mid_step_legacy','void mid_observe_legacy'),('mid_step','void
  body=body.replace('return result;','return;')
  transformed='void '+name+'_into(MidStep& result,'+args+'){'+body+'}\nMidStep '+name+'('+args+'){MidStep result;'+name+'_into(result,'+call+');return result;}'
  s=s[:start]+transformed+s[i:]
-(r/'src/entropy_r19_inplace.cpp').write_text(s)
-s=(r/'tools/native/r17_prior.cpp').read_text().replace('../src/entropy.cpp','../src/entropy_r19_inplace.cpp')
+(r/'src/experiments/r19/entropy_r19_inplace.cpp').write_text(s)
+s=(r/'tools/native/r17_prior.cpp').read_text().replace('../src/entropy.cpp','../src/experiments/r19/entropy_r19_inplace.cpp')
 old='PriorStep s;static_cast<MidStep&>(s)=mid_step(p,prev,own,ply,stage,MidProfile::R16SourceModel,c);';assert old in s
 s=s.replace(old,'PriorStep s;mid_step_into(s,p,prev,own,ply,stage,MidProfile::R16SourceModel,c);')
 (r/'tools/native/r17_inplace.cpp').write_text(s)

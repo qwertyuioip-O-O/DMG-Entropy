@@ -4,7 +4,7 @@ from pathlib import Path
 import argparse,subprocess
 p=argparse.ArgumentParser();p.add_argument('--out',default='test-goal10-div');a=p.parse_args()
 r=Path(__file__).resolve().parents[2];o=Path(a.out).resolve();o.mkdir(parents=True,exist_ok=True)
-s=(r/'src/entropy_g10div.cpp').read_text();start=s.index('struct ExactDivisor {');end=s.index('V6Weights v6_quantize',start);implementation=s[start:end]
+s=(r/'src/experiments/goal10/entropy_g10div.cpp').read_text();start=s.index('struct ExactDivisor {');end=s.index('V6Weights v6_quantize',start);implementation=s[start:end]
 program='''#include <cstdint>
 #include <climits>
 #include <random>

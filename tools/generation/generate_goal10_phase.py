@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 from pathlib import Path
 r=Path(__file__).resolve().parents[2]
-s=(r/'src/entropy_g10group.cpp').read_text()
+s=(r/'src/experiments/goal10/entropy_g10group.cpp').read_text()
 a=s.index('unsigned material_phase(const Position& p) {');b=s.index('\n}\n',a)+2
 s=s[:a]+'''unsigned material_phase(const Position& p) {
     // Disjoint piece masks allow merging equal phase weights before counting.
@@ -16,6 +16,6 @@ s=s[:a]+'''unsigned material_phase(const Position& p) {
     return std::min(24u,phase);
 }'''+s[b:]
 s=s.replace('if(ply<24 && material_phase(p)>=18)return 0;\n        if(material_phase(p)<=8)return 2;','const unsigned value=material_phase(p);\n        if(ply<24 && value>=18)return 0;\n        if(value<=8)return 2;')
-(r/'src/entropy_g10phase.cpp').write_text(s)
+(r/'src/experiments/goal10/entropy_g10phase.cpp').write_text(s)
 for name in ['r17_g10group.cpp','r18_g10group.cpp','r19_g10group_model.hpp','r19_g10group.cpp']:
  (r/'tools/native'/name.replace('g10group','g10phase')).write_text((r/'tools/native'/name).read_text().replace('g10group','g10phase'))

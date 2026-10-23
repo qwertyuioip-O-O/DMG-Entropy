@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 from pathlib import Path
-r=Path(__file__).resolve().parents[2];s=(r/'src/entropy_g10count.cpp').read_text()
+r=Path(__file__).resolve().parents[2];s=(r/'src/experiments/goal10/entropy_g10count.cpp').read_text()
 a=s.index('std::array<uint16_t,256> r4_rank_features_count(');b=s.index('\nstd::array<uint16_t,256> r4_rank_features(',a)
 new='''// Portable, fixed feature tables: no processor-specific instructions.
 static constexpr auto rank_center=[](){
@@ -59,6 +59,6 @@ std::array<uint16_t,256> r4_rank_features_count(const Position& p,const V8Step& 
     return flags;
 }
 '''
-s=s[:a]+new+s[b:];(r/'src/entropy_g10index.cpp').write_text(s)
+s=s[:a]+new+s[b:];(r/'src/experiments/goal10/entropy_g10index.cpp').write_text(s)
 for name in ['r17_g10count.cpp','r18_g10count.cpp','r19_g10count_model.hpp','r19_g10count.cpp','test_goal10_count.cpp']:
  (r/'tools/native'/name.replace('g10count','g10index').replace('goal10_count','goal10_index')).write_text((r/'tools/native'/name).read_text().replace('g10count','g10index'))

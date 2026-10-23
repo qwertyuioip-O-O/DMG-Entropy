@@ -39,7 +39,7 @@ branch=r'''
  }
 '''
 s=s.replace(' if(cmd=="test")',branch+' if(cmd=="test")',1);src=r/'tools/native/r19_cohort_phase.cpp';src.write_text(s)
-f=['g++','-std=c++20','-O3','-flto=1','-DNDEBUG','-DDMT_FAST_TACTICAL','-DDMT_DENSE_CATEGORY_UPDATES','-DDMT_FEATURE_LUT','-I'+str(r/'include')]
-subprocess.run([*f,str(src),str(r/'src/rmc_g10static.cpp'),'-o',str(o/'cohort_phase')],check=True)
+f=['g++','-std=c++20','-O3','-flto=1','-DNDEBUG','-DDMT_FAST_TACTICAL','-DDMT_DENSE_CATEGORY_UPDATES','-DDMT_FEATURE_LUT','-I'+str(r/'include'),'-I'+str(r/'src')]
+subprocess.run([*f,str(src),str(r/'src/experiments/goal10/rmc_g10static.cpp'),'-o',str(o/'cohort_phase')],check=True)
 (o/'source-proof.json').write_text(json.dumps({'original_wrapper_sha256':hashlib.sha256(original.encode()).hexdigest(),'removing_only_clock_hooks_restores_original_source':True,'clock':'steady_clock wall; timestamps only at phase transitions/game end; per-ply counter/branch remains','exclusions':'per-game setup, file framing/checksum, file input and parsing excluded from phase timers; measured separately by untouched native speed','generated_source_sha256':hashlib.sha256(s.encode()).hexdigest(),'binary_sha256':hashlib.sha256((o/'cohort_phase').read_bytes()).hexdigest()},indent=2))
 print(o/'cohort_phase')

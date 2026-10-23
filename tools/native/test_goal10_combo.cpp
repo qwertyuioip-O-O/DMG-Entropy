@@ -1,4 +1,4 @@
-#include "../../src/entropy_g10combo.cpp"
+#include "../../src/experiments/goal10/entropy_g10combo.cpp"
 #include <iostream>
 #include <random>
 using namespace rmc;

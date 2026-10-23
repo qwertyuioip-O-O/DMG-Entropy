@@ -1,4 +1,4 @@
-#include "goal10_op_table.hpp"
+#include "experiments/goal10/goal10_op_table.hpp"
 #include "entropy.hpp"
 #include "dmg_v6.hpp"
 #include "dmg_v7.hpp"
@@ -9,7 +9,7 @@
 #include "dmt14_features.hpp"
 #include "dmt15_features.hpp"
 #include "dmt16_features.hpp"
-#include "dmt16_expected.hpp"
+#include "generated/dmt16_expected.hpp"
 #include <unordered_map>
 #include <map>
 #include <deque>
@@ -311,7 +311,10 @@ struct AttackCache {
 // Reuse unaffected own-piece attacks across legal candidate moves. Full keys
 // and occupancy deltas make this exact for captures, EP, castling and promotion.
 struct OwnAttackReuse {
-    std::array<uint64_t,64> attacks{},rays{};
+    std::array<uint16_t,64> source_id{},ray_sources{};
+    std::array<uint8_t,16> source_square{};
+    std::array<std::array<uint64_t,16>,4> unions{};
+    uint16_t all_ids=0;unsigned groups=0;bool fallback=false;
     static uint64_t piece_attack(const Position& p,int sq) {
         const auto& t=fast_attack_tables;const int kind=abs_piece(p.board[sq]);
         const int side=p.board[sq]>0?0:1;
@@ -327,21 +330,40 @@ struct OwnAttackReuse {
         }
         return out;
     }
-    explicit OwnAttackReuse(const Position& p){
-        auto pieces=p.occupied[p.side];
-        while(pieces){int sq=std::countr_zero(pieces);pieces&=pieces-1;
-            attacks[sq]=piece_attack(p,sq);int kind=abs_piece(p.board[sq]);
-            if(kind>=3&&kind<=5)for(int d=kind==3?4:0;d<(kind==4?4:8);++d)rays[sq]|=fast_attack_tables.ray[sq][d];
+    explicit OwnAttackReuse(const Position&p){
+        const unsigned count=std::popcount(p.occupied[p.side]);
+        if(count>16){fallback=true;return;}
+        all_ids=count==16?uint16_t(65535):uint16_t((1u<<count)-1);groups=(count+3)/4;
+        std::array<uint64_t,16> attacks{};unsigned id=0;
+        for(uint64_t pieces=p.occupied[p.side];pieces;pieces&=pieces-1,++id){
+            const int sq=std::countr_zero(pieces);const uint16_t flag=uint16_t(1u<<id);
+            source_square[id]=uint8_t(sq);source_id[sq]=flag;attacks[id]=piece_attack(p,sq);
+            const int kind=abs_piece(p.board[sq]);if(kind<3||kind>5)continue;
+            uint64_t rays=0;for(int d=kind==3?4:0;d<(kind==4?4:8);++d)rays|=fast_attack_tables.ray[sq][d];
+            while(rays){int target=std::countr_zero(rays);rays&=rays-1;ray_sources[target]|=flag;}
+        }
+        for(unsigned group=0;group<groups;++group)for(unsigned mask=1;mask<16;++mask){
+            unsigned low=std::countr_zero(mask);unions[group][mask]=unions[group][mask&(mask-1)]|attacks[group*4+low];
         }
     }
-    uint64_t after(const Position& before,const Position& next)const{
-        const uint64_t changed=(before.occupied[0]|before.occupied[1])^(next.occupied[0]|next.occupied[1]);
-        uint64_t pieces=next.occupied[before.side],out=0;
-        while(pieces){int sq=std::countr_zero(pieces);pieces&=pieces-1;
-            out|=(before.board[sq]!=next.board[sq]||(rays[sq]&changed))?piece_attack(next,sq):attacks[sq];
+    uint64_t after(const Position&before,const Position&next)const{
+        const unsigned side=before.side;uint64_t out=0;
+        if(fallback){for(uint64_t pieces=next.occupied[side];pieces;pieces&=pieces-1)out|=piece_attack(next,std::countr_zero(pieces));}
+        else{
+            uint16_t affected=0;
+            uint64_t changed=(before.occupied[0]|before.occupied[1])^(next.occupied[0]|next.occupied[1]);
+            while(changed){int sq=std::countr_zero(changed);changed&=changed-1;affected|=ray_sources[sq];}
+            uint64_t removed=before.occupied[side]&~next.occupied[side];
+            while(removed){int sq=std::countr_zero(removed);removed&=removed-1;affected|=source_id[sq];}
+            const unsigned unchanged=all_ids&~affected;
+            for(unsigned group=0;group<groups;++group)out|=unions[group][(unchanged>>(group*4))&15];
+            unsigned pending=affected;
+            while(pending){unsigned id=std::countr_zero(pending);pending&=pending-1;int sq=source_square[id];if(next.occupied[side]&bit(sq))out|=piece_attack(next,sq);}
+            uint64_t added=next.occupied[side]&~before.occupied[side];
+            while(added){int sq=std::countr_zero(added);added&=added-1;out|=piece_attack(next,sq);}
         }
 #ifdef DMT_VERIFY_REUSE
-        AttackCache oracle(next);if(out!=oracle.attacked_mask)fail("own attack reuse mismatch");
+        AttackCache oracle(next);if(out!=oracle.attacked_mask)fail("grouped attack reuse mismatch");
 #endif
         return out;
     }

@@ -4,7 +4,7 @@ import argparse,subprocess
 from pathlib import Path
 ap=argparse.ArgumentParser();ap.add_argument('--out',default='build-r16');ap.add_argument('--cxx',default='g++');ap.add_argument('--verify-reuse',action='store_true');ap.add_argument('--no-lut',action='store_true');ap.add_argument('--opportunity-cache',action='store_true');ap.add_argument('--reference-candidates',action='store_true');ap.add_argument('--dense-updates',action='store_true');ap.add_argument('--sparse-updates',action='store_true');ap.add_argument('--active-updates',action='store_true');ap.add_argument('--u32-updates',action='store_true');ap.add_argument('--reference-only',action='store_true');args=ap.parse_args()
 root=Path(__file__).resolve().parents[2];out=Path(args.out).resolve();out.mkdir(parents=True,exist_ok=True)
-flags=[args.cxx,'-std=c++20','-O3','-DNDEBUG','-DDMT_FAST_TACTICAL','-I'+str(root/'include')]
+flags=[args.cxx,'-std=c++20','-O3','-DNDEBUG','-DDMT_FAST_TACTICAL','-I'+str(root/'include'),'-I'+str(root/'src')]
 if args.u32_updates:flags+=['-DDMT_U32_CATEGORY_UPDATES','-DDMT_DENSE_CATEGORY_UPDATES']
 elif args.active_updates:flags+=['-DDMT_ACTIVE_CATEGORY_UPDATES']
 elif args.dense_updates or not args.sparse_updates:flags+=['-DDMT_DENSE_CATEGORY_UPDATES']

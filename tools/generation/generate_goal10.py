@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Exact rank buckets, then exact bitboard bishop mobility; frozen goal anchor."""
 from pathlib import Path
-r=Path(__file__).resolve().parents[2];original=(r/'src/entropy_r19_scratch.cpp').read_text()
+r=Path(__file__).resolve().parents[2];original=(r/'src/experiments/r19/entropy_r19_scratch.cpp').read_text()
 def function(s,name):
  start=s.index(name);brace=s.index('{',start);i=brace+1;depth=1
  while depth:depth+=(s[i]=='{')-(s[i]=='}');i+=1
@@ -82,7 +82,7 @@ newpos=newpos.replace('    return features;','''#ifdef DMT_VERIFY_GOAL10
 refpos='#ifdef DMT_VERIFY_GOAL10\n'+oldpos.replace('r5_positional_features(','r5_positional_reference_goal10(',1).replace('r5_slider_mobility(','r5_slider_mobility_reference_goal10(')+'\n#endif\n'
 s=s[:a]+refpos+newpos+s[b:]
 for suffix,core in [('g10rank',stage1),('g10mob',s)]:
- (r/f'src/entropy_{suffix}.cpp').write_text(core)
- for old,new,incold,incnew in [('r17_scratch.cpp',f'r17_{suffix}.cpp','entropy_r19_scratch.cpp',f'entropy_{suffix}.cpp'),('r18_scratch.cpp',f'r18_{suffix}.cpp','r17_scratch.cpp',f'r17_{suffix}.cpp'),('r19_scratch_model.hpp',f'r19_{suffix}_model.hpp','r18_scratch.cpp',f'r18_{suffix}.cpp'),('r19_scratch.cpp',f'r19_{suffix}.cpp','r19_scratch_model.hpp',f'r19_{suffix}_model.hpp')]:
+ (r/f'src/experiments/goal10/entropy_{suffix}.cpp').write_text(core)
+ for old,new,incold,incnew in [('r17_scratch.cpp',f'r17_{suffix}.cpp','experiments/r19/entropy_r19_scratch.cpp',f'experiments/goal10/entropy_{suffix}.cpp'),('r18_scratch.cpp',f'r18_{suffix}.cpp','r17_scratch.cpp',f'r17_{suffix}.cpp'),('r19_scratch_model.hpp',f'r19_{suffix}_model.hpp','r18_scratch.cpp',f'r18_{suffix}.cpp'),('r19_scratch.cpp',f'r19_{suffix}.cpp','r19_scratch_model.hpp',f'r19_{suffix}_model.hpp')]:
   (r/'tools/native'/new).write_text((r/'tools/native'/old).read_text().replace(incold,incnew))
 print('Generated goal10 stage1 exact rank buckets and cumulative stage2 bitboard mobility')

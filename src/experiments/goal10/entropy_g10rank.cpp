@@ -1,4 +1,3 @@
-#include "goal10_compact_table.hpp"
 #include "entropy.hpp"
 #include "dmg_v6.hpp"
 #include "dmg_v7.hpp"
@@ -9,7 +8,7 @@
 #include "dmt14_features.hpp"
 #include "dmt15_features.hpp"
 #include "dmt16_features.hpp"
-#include "dmt16_expected.hpp"
+#include "generated/dmt16_expected.hpp"
 #include <unordered_map>
 #include <map>
 #include <deque>
@@ -873,8 +872,8 @@ struct V7Patterns {
     std::unordered_map<uint32_t,uint16_t> geometry;
     std::unordered_map<uint32_t,uint16_t> squares;
     struct Opportunity {uint32_t expected=0,actual=0;};
-    Goal10CompactOpTable<Opportunity> geom_op;
-    mutable Goal10CompactOpTable<Opportunity> square_op;
+    std::unordered_map<uint32_t,Opportunity> geom_op;
+    mutable std::unordered_map<uint32_t,Opportunity> square_op;
     static unsigned phase(const Position& p,unsigned ply) {
         if(ply<24 && material_phase(p)>=18)return 0;
         if(material_phase(p)<=8)return 2;
@@ -2779,7 +2778,8 @@ unsigned r4_context(const Position& p,const V8Step& base) {
 }
 // Relative ranks are calculated across the ACTUAL candidate set.
 // Cheap geometry and already computed tactical flags, no added board simulation.
-std::array<uint16_t,256> r4_rank_features(const Position& p,const V8Step& base,
+#ifdef DMT_VERIFY_GOAL10
+std::array<uint16_t,256> r4_rank_reference_goal10(const Position& p,const V8Step& base,
                                            const std::array<uint16_t,256>& tactics) {
     std::array<uint16_t,256> flags{};
     std::array<int,256> score{};
@@ -2849,6 +2849,76 @@ std::array<uint16_t,256> r4_rank_features(const Position& p,const V8Step& base,
         processed=end;
         begin=end;
     }
+    return flags;
+}
+#endif
+std::array<uint16_t,256> r4_rank_features(const Position& p,const V8Step& base,
+                                           const std::array<uint16_t,256>& tactics) {
+    std::array<uint16_t,256> flags{};
+    std::array<int,256> score{};
+    unsigned n=base.moves.size;
+    for(unsigned i=0;i<n;++i){
+        Move m=base.moves.a[i].m;
+        bool capture=bool(base.flags[i]&(1u<<4));
+        int kind=abs_piece(p.board[m.from]);
+        int from_c=std::abs(2*int(m.from&7)-7)+std::abs(2*int(m.from>>3)-7);
+        int to_c=std::abs(2*int(m.to&7)-7)+std::abs(2*int(m.to>>3)-7);
+        int v=(from_c-to_c)/2;
+        if(kind==6)v=0; // king centralization unsafe in midgame
+        if(kind==1)v/=2;
+        if(capture)v+=3;
+        if(tactics[i]&(1u<<0))v+=6; // SEE profitable
+        if(tactics[i]&(1u<<1))v-=6;
+        if(tactics[i]&(1u<<8))v+=3;
+        if(tactics[i]&(1u<<9))v-=3;
+        if(tactics[i]&(1u<<2))v+=4; // new threat
+        if(tactics[i]&(1u<<3))v+=2;
+        if(tactics[i]&(1u<<6))v+=2;
+        score[i]=v;
+    }
+    // Lookup tables replace candidate x candidate ranking comparisons.
+    // Scores are bounded by the additions above to (-64,64).
+    // Exact strict-rank calculation using only *observed* scores.  The old
+    // implementation cleared and scanned 12*129 bins for every position.
+    // Sorting <=256 candidates allows all equal scores to share an identical
+    // "strictly better" count; class totals are unchanged.
+    std::array<int,129> head;head.fill(-1);
+    std::array<int,256> next;
+    std::array<uint8_t,256> classes;
+    std::array<unsigned,12> class_totals{},class_seen{};
+    int minimum=64,maximum=-64;
+    for(unsigned i=0;i<n;++i){
+        const auto m=base.moves.a[i].m;
+        const unsigned cls=2*(abs_piece(p.board[m.from])-1)+bool(base.flags[i]&(1u<<4));
+        if(score[i]<-64||score[i]>64)fail("relative rank score outside proven range");
+        classes[i]=uint8_t(cls);++class_totals[cls];
+        next[i]=head[score[i]+64];head[score[i]+64]=int(i);
+        minimum=std::min(minimum,score[i]);maximum=std::max(maximum,score[i]);
+    }
+    unsigned processed=0;
+    for(int value=maximum;value>=minimum;--value){
+        const int first=head[value+64];if(first<0)continue;
+        unsigned count=0;
+        for(int i=first;i>=0;i=next[i]){
+            const bool capture=bool(base.flags[i]&(1u<<4));
+            const unsigned cls=classes[i],same_class=class_totals[cls],better_class=class_seen[cls];
+            uint16_t bits=0;
+            if(processed==0)bits|=1u<<0;
+            if(4*processed<=n)bits|=1u<<1;
+            if(better_class==0&&same_class>=2)bits|=1u<<2;
+            if(same_class>=3&&3*better_class<=same_class)bits|=1u<<3;
+            if(!capture&&value>=2)bits|=1u<<4;
+            if(!capture&&value<=-2)bits|=1u<<5;
+            if(capture&&value>=6)bits|=1u<<6;
+            if(capture&&value<=-4)bits|=1u<<7;
+            flags[i]=bits;++count;
+        }
+        for(int i=first;i>=0;i=next[i])++class_seen[classes[i]];
+        processed+=count;
+    }
+#ifdef DMT_VERIFY_GOAL10
+    if(flags!=r4_rank_reference_goal10(p,base,tactics))fail("goal10 rank oracle mismatch");
+#endif
     return flags;
 }
 

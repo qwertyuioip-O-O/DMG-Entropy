@@ -1,4 +1,4 @@
-#include "goal10_op_table.hpp"
+#include "experiments/goal10/goal10_op_table.hpp"
 #include "entropy.hpp"
 #include "dmg_v6.hpp"
 #include "dmg_v7.hpp"
@@ -9,7 +9,7 @@
 #include "dmt14_features.hpp"
 #include "dmt15_features.hpp"
 #include "dmt16_features.hpp"
-#include "dmt16_expected.hpp"
+#include "generated/dmt16_expected.hpp"
 #include <unordered_map>
 #include <map>
 #include <deque>
@@ -2801,7 +2801,8 @@ unsigned r4_context(const Position& p,const V8Step& base) {
 }
 // Relative ranks are calculated across the ACTUAL candidate set.
 // Cheap geometry and already computed tactical flags, no added board simulation.
-std::array<uint16_t,256> r4_rank_features(const Position& p,const V8Step& base,
+#ifdef DMT_VERIFY_COUNT
+std::array<uint16_t,256> r4_rank_features_reference(const Position& p,const V8Step& base,
                                            const std::array<uint16_t,256>& tactics) {
     std::array<uint16_t,256> flags{};
     std::array<int,256> score{};
@@ -2872,6 +2873,92 @@ std::array<uint16_t,256> r4_rank_features(const Position& p,const V8Step& base,
         begin=end;
     }
     return flags;
+}
+
+#endif
+std::array<uint16_t,256> r4_rank_features_count(const Position& p,const V8Step& base,
+                                           const std::array<uint16_t,256>& tactics) {
+    std::array<uint16_t,256> flags{};
+    std::array<int,256> score{};
+    unsigned n=base.moves.size;
+    for(unsigned i=0;i<n;++i){
+        Move m=base.moves.a[i].m;
+        bool capture=bool(base.flags[i]&(1u<<4));
+        int kind=abs_piece(p.board[m.from]);
+        int from_c=std::abs(2*int(m.from&7)-7)+std::abs(2*int(m.from>>3)-7);
+        int to_c=std::abs(2*int(m.to&7)-7)+std::abs(2*int(m.to>>3)-7);
+        int v=(from_c-to_c)/2;
+        if(kind==6)v=0; // king centralization unsafe in midgame
+        if(kind==1)v/=2;
+        if(capture)v+=3;
+        if(tactics[i]&(1u<<0))v+=6; // SEE profitable
+        if(tactics[i]&(1u<<1))v-=6;
+        if(tactics[i]&(1u<<8))v+=3;
+        if(tactics[i]&(1u<<9))v-=3;
+        if(tactics[i]&(1u<<2))v+=4; // new threat
+        if(tactics[i]&(1u<<3))v+=2;
+        if(tactics[i]&(1u<<6))v+=2;
+        score[i]=v;
+    }
+    // Lookup tables replace candidate x candidate ranking comparisons.
+    // Scores are bounded by the additions above to (-64,64).
+    // Exact strict-rank calculation using only *observed* scores.  The old
+    // implementation cleared and scanned 12*129 bins for every position.
+    // Sorting <=256 candidates allows all equal scores to share an identical
+    // "strictly better" count; class totals are unchanged.
+    struct RankItem { int score; unsigned index; uint8_t cls; };
+    std::array<RankItem,256> order{};
+    std::array<unsigned,12> class_totals{},class_seen{};
+    for(unsigned i=0;i<n;++i){
+        const auto m=base.moves.a[i].m;
+        const auto cls=unsigned(2*(abs_piece(p.board[m.from])-1)+bool(base.flags[i]&(1u<<4)));
+        if(score[i]<-15||score[i]>26)fail("relative rank score outside proven range");
+        order[i]={score[i],i,uint8_t(cls)};
+        ++class_totals[cls];
+    }
+    // Counting scatter creates contiguous score runs, avoiding comparator sorting.
+    std::array<unsigned,42> count{},offset{};
+    for(unsigned i=0;i<n;++i)++count[unsigned(order[i].score+15)];
+    unsigned cursor=0;
+    for(int k=41;k>=0;--k){offset[k]=cursor;cursor+=count[k];}
+    std::array<RankItem,256> sorted;
+    for(unsigned i=0;i<n;++i)sorted[offset[unsigned(order[i].score+15)]++]=order[i];
+    std::copy_n(sorted.begin(),n,order.begin());
+    unsigned processed=0;
+    for(unsigned begin=0;begin<n;){
+        unsigned end=begin+1;
+        while(end<n && order[end].score==order[begin].score)++end;
+        // `processed` and `class_seen` only include strictly higher scores.
+        for(unsigned j=begin;j<end;++j){
+            const auto item=order[j];
+            const auto m=base.moves.a[item.index].m;
+            const bool capture=bool(base.flags[item.index]&(1u<<4));
+            const unsigned better=processed, same_class=class_totals[item.cls],
+                           better_class=class_seen[item.cls];
+            uint16_t bits=0;
+            if(better==0)bits|=1u<<0;
+            if(4*better<=n)bits|=1u<<1;
+            if(better_class==0 && same_class>=2)bits|=1u<<2;
+            if(same_class>=3 && 3*better_class<=same_class)bits|=1u<<3;
+            if(!capture && item.score>=2)bits|=1u<<4;
+            if(!capture && item.score<=-2)bits|=1u<<5;
+            if(capture && item.score>=6)bits|=1u<<6;
+            if(capture && item.score<=-4)bits|=1u<<7;
+            flags[item.index]=bits;
+        }
+        for(unsigned j=begin;j<end;++j)++class_seen[order[j].cls];
+        processed=end;
+        begin=end;
+    }
+    return flags;
+}
+
+std::array<uint16_t,256> r4_rank_features(const Position& p,const V8Step& base,const std::array<uint16_t,256>& tactics){
+    auto result=r4_rank_features_count(p,base,tactics);
+#ifdef DMT_VERIFY_COUNT
+    if(result!=r4_rank_features_reference(p,base,tactics))fail("counted rank mismatch");
+#endif
+    return result;
 }
 
 // DMT5: candidate-local positional signals, NEVER use the encoded/selected move.

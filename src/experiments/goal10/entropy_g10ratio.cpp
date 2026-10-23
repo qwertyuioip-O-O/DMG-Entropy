@@ -1,4 +1,4 @@
-#include "goal10_op_table.hpp"
+#include "experiments/goal10/goal10_op_table.hpp"
 #include "entropy.hpp"
 #include "dmg_v6.hpp"
 #include "dmg_v7.hpp"
@@ -9,7 +9,7 @@
 #include "dmt14_features.hpp"
 #include "dmt15_features.hpp"
 #include "dmt16_features.hpp"
-#include "dmt16_expected.hpp"
+#include "generated/dmt16_expected.hpp"
 #include <unordered_map>
 #include <map>
 #include <deque>
@@ -1408,6 +1408,21 @@ bool v09_known_pseudo(const Position& p, Move m, Position& next,uint64_t pinned,
 #endif
     return ok;
 }
+// BEGIN GOAL10_EXACT_OP_RATIO
+static uint64_t goal10_exact_op_ratio(uint32_t actual,uint32_t expected){
+    const uint64_t numerator=(uint64_t(actual)+16384u)*1024u;
+    const uint64_t denominator=uint64_t(expected)+16384u;
+    // Entire uint32 counter domain: n<2^43, d<2^33 and quotient<2^29.
+    // IEEE binary precision >=53 represents both operands exactly; quotient
+    // rounding changes the truncated integer by at most one. Product fits u64.
+    if constexpr(std::numeric_limits<double>::is_iec559 && std::numeric_limits<double>::digits>=53){
+        uint64_t q=uint64_t(double(numerator)/double(denominator));
+        const uint64_t product=q*denominator;
+        if(product>numerator)return q-1;
+        return q+uint64_t(numerator-product>=denominator);
+    }else return numerator/denominator;
+}
+// END GOAL10_EXACT_OP_RATIO
 V6Weights v09_cached_opportunity(const CandidateList& c,const Position& p,unsigned ply,const V7Patterns& db,std::array<uint32_t,256>& keys,std::array<V7Patterns::Opportunity*,256>* entries=nullptr) {
     const unsigned phase=V7Patterns::phase(p,ply);std::array<uint64_t,256> raw{};
     constexpr uint64_t prior=4u*4096u;
@@ -1423,7 +1438,7 @@ V6Weights v09_cached_opportunity(const CandidateList& c,const Position& p,unsign
             auto* entry=&db.square_op[key];(*entries)[i]=entry;record=entry;
         }else {auto it=db.square_op.find(key);if(it!=db.square_op.end())record=&it->second;}
         uint64_t hits=record?record->actual:0,exp=record?record->expected:0;
-        uint64_t ratio=std::clamp((hits+prior)*1024u/(exp+prior),uint64_t(341),uint64_t(3072));
+        uint64_t ratio=std::clamp(goal10_exact_op_ratio(uint32_t(hits),uint32_t(exp)),uint64_t(341),uint64_t(3072));
         raw[i]=std::max<uint64_t>(1,uint64_t(c.a[i].w)*ratio);
     }
     return v6_quantize(raw,c.size);
@@ -2565,20 +2580,6 @@ struct MidResidual {
         ++steps;
         if((steps&63u)==0)for(auto& t:theta){if(t>0)--t;else if(t<0)++t;}
     }
-    void observe_prepared(const std::array<int32_t,MID_F>& expectations,uint16_t chosen_flags,bool adaptive,unsigned explicit_rate){
-        for(unsigned k=0;k<MID_F;++k){
-            int32_t expected=expectations[k];
-            int32_t actual=(chosen_flags&(1u<<k))?4096:0;
-            unsigned rate=explicit_rate?explicit_rate:(adaptive?(seen[k]>24 ? 3:1):2);
-            rest[k]+=int32_t(rate)*(actual-expected);
-            int32_t update=rest[k]/4096;
-            rest[k]-=update*4096;
-            theta[k]=int16_t(std::clamp(int(theta[k])+update,-24,24));
-            if(expected>100&&expected<3996)++seen[k];
-        }
-        ++steps;
-        if((steps&63u)==0)for(auto& t:theta){if(t>0)--t;else if(t<0)++t;}
-    }
 };
 // DMT3: exact position (including side, rights and EP) transposition context.
 // This is an ONLINE archive-local dictionary, not an external opening book.
@@ -2815,7 +2816,8 @@ unsigned r4_context(const Position& p,const V8Step& base) {
 }
 // Relative ranks are calculated across the ACTUAL candidate set.
 // Cheap geometry and already computed tactical flags, no added board simulation.
-std::array<uint16_t,256> r4_rank_features(const Position& p,const V8Step& base,
+#ifdef DMT_VERIFY_COUNT
+std::array<uint16_t,256> r4_rank_features_reference(const Position& p,const V8Step& base,
                                            const std::array<uint16_t,256>& tactics) {
     std::array<uint16_t,256> flags{};
     std::array<int,256> score{};
@@ -2886,6 +2888,72 @@ std::array<uint16_t,256> r4_rank_features(const Position& p,const V8Step& base,
         begin=end;
     }
     return flags;
+}
+
+#endif
+// Portable, fixed feature tables: no processor-specific instructions.
+static constexpr auto rank_center=[](){
+    std::array<int8_t,64> a{};
+    for(int i=0;i<64;++i){int x=2*(i&7)-7,y=2*(i>>3)-7;a[i]=int8_t(((x<0?-x:x)+(y<0?-y:y))/2);}
+    return a;
+}();
+static constexpr auto rank_tactical=[](){
+    std::array<int8_t,1024> a{};
+    for(unsigned f=0;f<a.size();++f)a[f]=int8_t(6*bool(f&1)-6*bool(f&2)+3*bool(f&256)-3*bool(f&512)+4*bool(f&4)+2*bool(f&8)+2*bool(f&64));
+    return a;
+}();
+std::array<uint16_t,256> r4_rank_features_count(const Position& p,const V8Step& base,
+                                           const std::array<uint16_t,256>& tactics) {
+    std::array<uint16_t,256> flags{};
+    std::array<int8_t,256> score;
+    std::array<uint8_t,256> cls,order;
+    std::array<uint16_t,42> count{},offset{};
+    std::array<unsigned,12> class_totals{},class_seen{};
+    const unsigned n=base.moves.size;
+    for(unsigned i=0;i<n;++i){
+        const auto m=base.moves.a[i].m;
+        const unsigned kind=unsigned(abs_piece(p.board[m.from]));
+        const bool capture=bool(base.flags[i]&(1u<<4));
+        int v=int(rank_center[m.from])-rank_center[m.to];
+        if(kind==6)v=0;
+        if(kind==1)v/=2;
+        v+=3*int(capture)+int(rank_tactical[tactics[i]&1023u]);
+        if(v<-15||v>26)fail("relative rank score outside proven range");
+        score[i]=int8_t(v);cls[i]=uint8_t(2*(kind-1)+capture);
+        ++class_totals[cls[i]];++count[unsigned(v+15)];
+    }
+    unsigned cursor=0;
+    for(int k=41;k>=0;--k){offset[k]=uint16_t(cursor);cursor+=count[k];}
+    for(unsigned i=0;i<n;++i)order[offset[unsigned(score[i]+15)]++]=uint8_t(i);
+    for(unsigned begin=0;begin<n;){
+        unsigned end=begin+1;
+        while(end<n && score[order[end]]==score[order[begin]])++end;
+        for(unsigned j=begin;j<end;++j){
+            const unsigned i=order[j],same_class=class_totals[cls[i]],better_class=class_seen[cls[i]];
+            const bool capture=bool(base.flags[i]&(1u<<4));
+            uint16_t bits=0;
+            if(begin==0)bits|=1u<<0;
+            if(4*begin<=n)bits|=1u<<1;
+            if(better_class==0 && same_class>=2)bits|=1u<<2;
+            if(same_class>=3 && 3*better_class<=same_class)bits|=1u<<3;
+            if(!capture && score[i]>=2)bits|=1u<<4;
+            if(!capture && score[i]<=-2)bits|=1u<<5;
+            if(capture && score[i]>=6)bits|=1u<<6;
+            if(capture && score[i]<=-4)bits|=1u<<7;
+            flags[i]=bits;
+        }
+        for(unsigned j=begin;j<end;++j)++class_seen[cls[order[j]]];
+        begin=end;
+    }
+    return flags;
+}
+
+std::array<uint16_t,256> r4_rank_features(const Position& p,const V8Step& base,const std::array<uint16_t,256>& tactics){
+    auto result=r4_rank_features_count(p,base,tactics);
+#ifdef DMT_VERIFY_COUNT
+    if(result!=r4_rank_features_reference(p,base,tactics))fail("counted rank mismatch");
+#endif
+    return result;
 }
 
 // DMT5: candidate-local positional signals, NEVER use the encoded/selected move.
@@ -3921,30 +3989,6 @@ MidStep mid_step_legacy(const Position& p,const Move* previous,const Move* own_p
                  unsigned ply,unsigned stage,MidProfile profile,const MidContext& ctx){MidStep result;mid_step_legacy_into(result,p,previous,own_previous,ply,stage,profile,ctx);return result;}
 void mid_observe_legacy(MidContext&ctx,const Position&p,const MidStep&s,
                  unsigned index,unsigned ply,unsigned stage,MidProfile profile){
-    std::array<int32_t,MID_F> expected_cache{};
-    bool expected_ready=false;
-    auto shared_observe=[&](MidResidual& learner,bool adaptive,unsigned rate){
-#ifdef DMT_VERIFY_SHARED
-        auto oracle=learner;
-        oracle.observe(s.additional,s.coded,s.base.moves.size,index,adaptive,rate);
-#endif
-        if(!expected_ready){
-            std::array<uint32_t,MID_F> sums{};
-            for(unsigned i=0;i<s.base.moves.size;++i){
-                unsigned fs=s.additional[i];
-                while(fs){unsigned k=std::countr_zero(fs);fs&=fs-1;sums[k]+=s.coded.weights[i];}
-            }
-            const ExactDivisor divide(s.coded.total);
-            for(unsigned k=0;k<MID_F;++k)
-                expected_cache[k]=int32_t(divide(uint64_t(sums[k])*4096+s.coded.total/2));
-            expected_ready=true;
-        }
-        learner.observe_prepared(expected_cache,s.additional[index],adaptive,rate);
-#ifdef DMT_VERIFY_SHARED
-        if(learner.theta!=oracle.theta || learner.rest!=oracle.rest || learner.seen!=oracle.seen || learner.steps!=oracle.steps)
-            throw std::runtime_error("shared observation state mismatch");
-#endif
-    };
     const MidProfile r11profile=profile;
     if(unsigned(profile)>=245)profile=MidProfile::R10ComboTact4Full;
     const MidProfile r10profile=profile;
@@ -4059,7 +4103,7 @@ void mid_observe_legacy(MidContext&ctx,const Position&p,const MidStep&s,
         }
         if((profile>=MidProfile::SEE && profile<=MidProfile::AllFast) ||
            (mid_new_profile(profile)&&mid_mid_enabled(profile)))
-            shared_observe(ctx.mid,
+            ctx.mid.observe(s.additional,s.coded,s.base.moves.size,index,
                             profile==MidProfile::AdaptiveResidual||profile==MidProfile::AllGuardAdaptive,
                             mid_fixed_rate(profile));
     }
@@ -4069,7 +4113,8 @@ void mid_observe_legacy(MidContext&ctx,const Position&p,const MidStep&s,
     if(mid_r3_open_position(profile) && stage==0)
         ctx.open_store.observe(p,s.base.moves.a[index].m);
     if((mid_r4_profile(profile)||mid_r5_profile(profile)||mid_r6_profile(profile)) && stage==1) {
-        if((ctx.r13_mask&2)&&r4_use_context(profile))shared_observe(ctx.context_residual[s.context],false,
+        if((ctx.r13_mask&2)&&r4_use_context(profile))ctx.context_residual[s.context].observe(
+            s.additional,s.coded,s.base.moves.size,index,false,
             profile==MidProfile::R4AllMild?1:2);
         if((ctx.r13_mask&4)&&r4_use_rank(profile))ctx.rank_residual.observe(
             s.r4_rank,s.coded,s.base.moves.size,index,false,

@@ -4,7 +4,7 @@ import argparse,subprocess,csv
 from pathlib import Path
 ap=argparse.ArgumentParser();ap.add_argument('--build',default='build-r12');ap.add_argument('--pgo-build');ap.add_argument('--lto-build');ap.add_argument('--out',default='benchmark-r12');ap.add_argument('--repeats',type=int,default=3);ap.add_argument('--audit',action='store_true');args=ap.parse_args()
 r=Path(__file__).resolve().parents[2];b=Path(args.build).resolve();out=Path(args.out).resolve();out.mkdir(parents=True,exist_ok=True);ref=r/'reference-r11'
-flags=['g++','-std=c++20','-O3','-DNDEBUG','-DDMT_FAST_TACTICAL','-I'+str(ref/'include')]
+flags=['g++','-std=c++20','-O3','-DNDEBUG','-DDMT_FAST_TACTICAL','-I'+str(ref/'include'),'-I'+str(ref/'src')]
 for name in ['entropy','rmc']:subprocess.run(flags+['-c',str(ref/'src'/f'{name}.cpp'),'-o',str(out/f'{name}.o')],check=True)
 for name,source in [('reference_speed','r12_speed.cpp'),('reference_audit','dmt11_audit.cpp')]:
  subprocess.run(flags+[str(r/'tools'/source),str(out/'entropy.o'),str(out/'rmc.o'),'-o',str(out/name)],check=True)

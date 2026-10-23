@@ -17,7 +17,7 @@ if args.full:
     for name,masks in [('dev','127,126,125,123,119,111,95,63,255,103,99,98'),('select','95,111,126'),('sealed','95'),('source_holdout','95')]:
         run([out/'r13_matrix',name,r/f'data-r13/{name}.uci-bundle',masks],results/(name+'-structure.csv'))
     # Standalone immutable DMT12 implementation, same compilation settings.
-    ref=r/'reference-r12';flags=['g++','-std=c++20','-O3','-DNDEBUG','-DDMT_FAST_TACTICAL','-DDMT_FEATURE_LUT','-I'+str(ref/'include')]
+    ref=r/'reference-r12';flags=['g++','-std=c++20','-O3','-DNDEBUG','-DDMT_FAST_TACTICAL','-DDMT_FEATURE_LUT','-I'+str(ref/'include'),'-I'+str(ref/'src')]
     for name in ['entropy','rmc']:run(flags+['-c',ref/f'src/{name}.cpp','-o',out/f'reference-{name}.o'])
     exe=out/'reference-audit';run(flags+[r/'tools/native/dmt11_audit.cpp',out/'reference-entropy.o',out/'reference-rmc.o','-o',exe]);exe.chmod(0o755)
     count=0

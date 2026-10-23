@@ -1,4 +1,4 @@
-#include "goal10_op_table.hpp"
+#include "experiments/goal10/goal10_op_table.hpp"
 #include "entropy.hpp"
 #include "dmg_v6.hpp"
 #include "dmg_v7.hpp"
@@ -9,7 +9,7 @@
 #include "dmt14_features.hpp"
 #include "dmt15_features.hpp"
 #include "dmt16_features.hpp"
-#include "dmt16_expected.hpp"
+#include "generated/dmt16_expected.hpp"
 #include <unordered_map>
 #include <map>
 #include <deque>
@@ -1353,9 +1353,24 @@ struct V8Context {
     V6Learn exact;
     std::array<uint32_t,V8_K> alpha{13108,13107,13107,13107,13107};
 };
+// Only initialized active pointers are copied; inactive slots are never read.
+struct Goal10EntryPrefix {
+    std::array<V7Patterns::Opportunity*,256> slots;
+    unsigned size=0;
+    Goal10EntryPrefix() noexcept {}
+    Goal10EntryPrefix(const Goal10EntryPrefix& other) noexcept : size(other.size) {
+        std::copy_n(other.slots.begin(),size,slots.begin());
+    }
+    Goal10EntryPrefix& operator=(const Goal10EntryPrefix& other) noexcept {
+        if(this!=&other){size=other.size;std::copy_n(other.slots.begin(),size,slots.begin());}
+        return *this;
+    }
+    auto& operator[](unsigned i){return slots[i];}
+    auto const& operator[](unsigned i) const{return slots[i];}
+};
 struct V8Step {
 #ifdef DMT_CACHE_OPPORTUNITY
-    std::array<V7Patterns::Opportunity*,256> square_entries{};
+    Goal10EntryPrefix square_entries;
 #endif
     CandidateList moves;
     std::array<uint32_t,256> flags{};
@@ -1367,7 +1382,7 @@ template<class Step> auto* v8_entry_cache(Step& s){
 #ifdef DMT_CACHE_OPPORTUNITY
     return &s.square_entries;
 #else
-    (void)s;return static_cast<std::array<V7Patterns::Opportunity*,256>*>(nullptr);
+    (void)s;return static_cast<Goal10EntryPrefix*>(nullptr);
 #endif
 }
 uint64_t v09_pinned(const Position& p) {
@@ -1408,22 +1423,7 @@ bool v09_known_pseudo(const Position& p, Move m, Position& next,uint64_t pinned,
 #endif
     return ok;
 }
-// BEGIN GOAL10_EXACT_OP_RATIO
-static uint64_t goal10_exact_op_ratio(uint32_t actual,uint32_t expected){
-    const uint64_t numerator=(uint64_t(actual)+16384u)*1024u;
-    const uint64_t denominator=uint64_t(expected)+16384u;
-    // Entire uint32 counter domain: n<2^43, d<2^33 and quotient<2^29.
-    // IEEE binary precision >=53 represents both operands exactly; quotient
-    // rounding changes the truncated integer by at most one. Product fits u64.
-    if constexpr(std::numeric_limits<double>::is_iec559 && std::numeric_limits<double>::digits>=53){
-        uint64_t q=uint64_t(double(numerator)/double(denominator));
-        const uint64_t product=q*denominator;
-        if(product>numerator)return q-1;
-        return q+uint64_t(numerator-product>=denominator);
-    }else return numerator/denominator;
-}
-// END GOAL10_EXACT_OP_RATIO
-V6Weights v09_cached_opportunity(const CandidateList& c,const Position& p,unsigned ply,const V7Patterns& db,std::array<uint32_t,256>& keys,std::array<V7Patterns::Opportunity*,256>* entries=nullptr) {
+V6Weights v09_cached_opportunity(const CandidateList& c,const Position& p,unsigned ply,const V7Patterns& db,std::array<uint32_t,256>& keys,Goal10EntryPrefix* entries=nullptr) {
     const unsigned phase=V7Patterns::phase(p,ply);std::array<uint64_t,256> raw{};
     constexpr uint64_t prior=4u*4096u;
     for(unsigned i=0;i<c.size;++i){
@@ -1438,13 +1438,19 @@ V6Weights v09_cached_opportunity(const CandidateList& c,const Position& p,unsign
             auto* entry=&db.square_op[key];(*entries)[i]=entry;record=entry;
         }else {auto it=db.square_op.find(key);if(it!=db.square_op.end())record=&it->second;}
         uint64_t hits=record?record->actual:0,exp=record?record->expected:0;
-        uint64_t ratio=std::clamp(goal10_exact_op_ratio(uint32_t(hits),uint32_t(exp)),uint64_t(341),uint64_t(3072));
+        uint64_t ratio=std::clamp((hits+prior)*1024u/(exp+prior),uint64_t(341),uint64_t(3072));
         raw[i]=std::max<uint64_t>(1,uint64_t(c.a[i].w)*ratio);
     }
+    if(entries)entries->size=c.size;
     return v6_quantize(raw,c.size);
 }
 void v09_cached_observe(V7Patterns& db,const CandidateList& c,const std::array<uint32_t,256>& keys,unsigned ix,
-                        const std::array<V7Patterns::Opportunity*,256>* entries=nullptr){
+                        const Goal10EntryPrefix* entries=nullptr){
+#ifdef DMT_VERIFY_ENTRY_CACHE
+    if(entries && entries->size!=c.size)fail("entry prefix size mismatch");
+    if(entries)for(unsigned i=0;i<c.size;++i)
+        if((*entries)[i]!=&db.square_op[keys[i]])fail("opportunity entry cache context/pointer mismatch");
+#endif
     for(unsigned i=0;i<c.size;++i){unsigned e=unsigned((uint64_t(c.a[i].w)*4096u+c.total/2)/c.total);
         auto& record=entries?*(*entries)[i]:db.square_op[keys[i]];V7Patterns::saturating_add(record.expected,e);}
     auto& chosen=entries?*(*entries)[ix]:db.square_op[keys[ix]];
@@ -2314,30 +2320,9 @@ V6Weights mid_temper(const V6Weights& base,unsigned n,MidProfile profile){
     return v6_quantize(raw,n);
 }
 V6Weights mid_guard(const V6Weights& base,unsigned n,unsigned percent){
-    if(!n || n>=V6_SCALE)fail("bad V6 alphabet");
-    if(!base.total)fail("zero model mass");
-    if(percent>100){
-        std::array<uint64_t,256> raw{};
-        for(unsigned i=0;i<n;++i)raw[i]=uint64_t(base.weights[i])*(100-percent)*n+uint64_t(percent)*base.total;
-        return v6_quantize(raw,n);
-    }
-    // sum(base.weights[0:n]) == base.total is the CDF invariant.
-    // Thus sum(raw) == 100*n*base.total exactly, independent of percent.
-    const uint64_t factor=uint64_t(100-percent)*n,offset=uint64_t(percent)*base.total;
-    const ExactDivisor divide(uint64_t(100)*n*base.total);
-    V6Weights q;
-    for(unsigned i=0;i<n;++i){
-        q.weights[i]=uint16_t(1+divide((uint64_t(base.weights[i])*factor+offset)*(V6_SCALE-n)));
-        q.total+=q.weights[i];
-    }
-    if(q.total>=32768)fail("V6 weights too large");
-#ifdef DMT_VERIFY_GUARD
     std::array<uint64_t,256> raw{};
     for(unsigned i=0;i<n;++i)raw[i]=uint64_t(base.weights[i])*(100-percent)*n+uint64_t(percent)*base.total;
-    const auto oracle=v6_quantize(raw,n);
-    if(q.weights!=oracle.weights || q.total!=oracle.total)fail("fused guard mismatch");
-#endif
-    return q;
+    return v6_quantize(raw,n);
 }
 int mid_piece_value(int piece){return MID_VAL[abs_piece(piece)];}
 

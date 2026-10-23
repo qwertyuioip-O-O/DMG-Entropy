@@ -8,7 +8,7 @@
 #include "dmt14_features.hpp"
 #include "dmt15_features.hpp"
 #include "dmt16_features.hpp"
-#include "dmt16_expected.hpp"
+#include "generated/dmt16_expected.hpp"
 #include <unordered_map>
 #include <map>
 #include <deque>
@@ -2778,8 +2778,7 @@ unsigned r4_context(const Position& p,const V8Step& base) {
 }
 // Relative ranks are calculated across the ACTUAL candidate set.
 // Cheap geometry and already computed tactical flags, no added board simulation.
-#ifdef DMT_VERIFY_GOAL10
-std::array<uint16_t,256> r4_rank_reference_goal10(const Position& p,const V8Step& base,
+std::array<uint16_t,256> r4_rank_features(const Position& p,const V8Step& base,
                                            const std::array<uint16_t,256>& tactics) {
     std::array<uint16_t,256> flags{};
     std::array<int,256> score{};
@@ -2851,76 +2850,6 @@ std::array<uint16_t,256> r4_rank_reference_goal10(const Position& p,const V8Step
     }
     return flags;
 }
-#endif
-std::array<uint16_t,256> r4_rank_features(const Position& p,const V8Step& base,
-                                           const std::array<uint16_t,256>& tactics) {
-    std::array<uint16_t,256> flags{};
-    std::array<int,256> score{};
-    unsigned n=base.moves.size;
-    for(unsigned i=0;i<n;++i){
-        Move m=base.moves.a[i].m;
-        bool capture=bool(base.flags[i]&(1u<<4));
-        int kind=abs_piece(p.board[m.from]);
-        int from_c=std::abs(2*int(m.from&7)-7)+std::abs(2*int(m.from>>3)-7);
-        int to_c=std::abs(2*int(m.to&7)-7)+std::abs(2*int(m.to>>3)-7);
-        int v=(from_c-to_c)/2;
-        if(kind==6)v=0; // king centralization unsafe in midgame
-        if(kind==1)v/=2;
-        if(capture)v+=3;
-        if(tactics[i]&(1u<<0))v+=6; // SEE profitable
-        if(tactics[i]&(1u<<1))v-=6;
-        if(tactics[i]&(1u<<8))v+=3;
-        if(tactics[i]&(1u<<9))v-=3;
-        if(tactics[i]&(1u<<2))v+=4; // new threat
-        if(tactics[i]&(1u<<3))v+=2;
-        if(tactics[i]&(1u<<6))v+=2;
-        score[i]=v;
-    }
-    // Lookup tables replace candidate x candidate ranking comparisons.
-    // Scores are bounded by the additions above to (-64,64).
-    // Exact strict-rank calculation using only *observed* scores.  The old
-    // implementation cleared and scanned 12*129 bins for every position.
-    // Sorting <=256 candidates allows all equal scores to share an identical
-    // "strictly better" count; class totals are unchanged.
-    std::array<int,129> head;head.fill(-1);
-    std::array<int,256> next;
-    std::array<uint8_t,256> classes;
-    std::array<unsigned,12> class_totals{},class_seen{};
-    int minimum=64,maximum=-64;
-    for(unsigned i=0;i<n;++i){
-        const auto m=base.moves.a[i].m;
-        const unsigned cls=2*(abs_piece(p.board[m.from])-1)+bool(base.flags[i]&(1u<<4));
-        if(score[i]<-64||score[i]>64)fail("relative rank score outside proven range");
-        classes[i]=uint8_t(cls);++class_totals[cls];
-        next[i]=head[score[i]+64];head[score[i]+64]=int(i);
-        minimum=std::min(minimum,score[i]);maximum=std::max(maximum,score[i]);
-    }
-    unsigned processed=0;
-    for(int value=maximum;value>=minimum;--value){
-        const int first=head[value+64];if(first<0)continue;
-        unsigned count=0;
-        for(int i=first;i>=0;i=next[i]){
-            const bool capture=bool(base.flags[i]&(1u<<4));
-            const unsigned cls=classes[i],same_class=class_totals[cls],better_class=class_seen[cls];
-            uint16_t bits=0;
-            if(processed==0)bits|=1u<<0;
-            if(4*processed<=n)bits|=1u<<1;
-            if(better_class==0&&same_class>=2)bits|=1u<<2;
-            if(same_class>=3&&3*better_class<=same_class)bits|=1u<<3;
-            if(!capture&&value>=2)bits|=1u<<4;
-            if(!capture&&value<=-2)bits|=1u<<5;
-            if(capture&&value>=6)bits|=1u<<6;
-            if(capture&&value<=-4)bits|=1u<<7;
-            flags[i]=bits;++count;
-        }
-        for(int i=first;i>=0;i=next[i])++class_seen[classes[i]];
-        processed+=count;
-    }
-#ifdef DMT_VERIFY_GOAL10
-    if(flags!=r4_rank_reference_goal10(p,base,tactics))fail("goal10 rank oracle mismatch");
-#endif
-    return flags;
-}
 
 // DMT5: candidate-local positional signals, NEVER use the encoded/selected move.
 // They are deliberately different from the existing centralization rank score:
@@ -2961,8 +2890,7 @@ inline bool r5_is_passed(const Position& p,int side,int square){
     }
     return true;
 }
-#ifdef DMT_VERIFY_GOAL10
-inline int r5_slider_mobility_reference_goal10(const Position& p,int sq,int side,int kind,uint64_t occupied){
+inline int r5_slider_mobility(const Position& p,int sq,int side,int kind,uint64_t occupied){
     static constexpr int df[8]={1,-1,0,0,1,1,-1,-1};
     static constexpr int dr[8]={0,0,1,-1,1,-1,1,-1};
     int count=0;
@@ -2979,96 +2907,8 @@ inline int r5_slider_mobility_reference_goal10(const Position& p,int sq,int side
     }
     return count;
 }
-#endif
-inline int goal10_slider_mobility(int sq,int kind,uint64_t occupied,uint64_t own){
-    const auto& t=fast_attack_tables;uint64_t available=0;
-    for(int d=kind==3?4:0;d<(kind==4?4:8);++d){
-        auto ray=t.ray[sq][d];auto blockers=ray&occupied;
-        if(blockers){int near=(d==0||d==2||d==4||d==6)?std::countr_zero(blockers):63-std::countl_zero(blockers);ray&=~t.ray[near][d];}
-        available|=ray;
-    }
-    return std::popcount(available&~own);
-}
-inline int r5_slider_mobility(const Position&p,int sq,int side,int kind,uint64_t occupied){
-    return goal10_slider_mobility(sq,kind,occupied,p.occupied[side]);
-}
-#ifdef DMT_VERIFY_GOAL10
-std::array<uint16_t,256> r5_positional_reference_goal10(const Position& p,const V8Step& base,
-             std::array<uint8_t,256>& quiet,MidProfile profile){
-    std::array<uint16_t,256> features{};
-    const unsigned mask=r5_pos_mask(profile);
-    const int us=p.side,them=us^1,enemy_king=p.king_square(them);
-    const uint64_t enemy_pawns=p.piece_bits[them][0],my_pawns=p.piece_bits[us][0];
-    // Static origin mobility and pawn file occupancy depend on the position,
-    // not on individual quiet destination candidates.
-    std::array<int8_t,64> bishop_origin_mobility{};
-    bishop_origin_mobility.fill(-1);
-    uint8_t own_pawn_files=0,enemy_pawn_files=0;
-    for(uint64_t pp=my_pawns;pp;pp&=pp-1)own_pawn_files|=uint8_t(1u<<(std::countr_zero(pp)&7));
-    for(uint64_t pp=enemy_pawns;pp;pp&=pp-1)enemy_pawn_files|=uint8_t(1u<<(std::countr_zero(pp)&7));
-    for(unsigned i=0;i<base.moves.size;++i){
-        Move m=base.moves.a[i].m;
-        // DMT4 capture flag includes en passant, which we intentionally exclude.
-        if(base.flags[i]&(1u<<4))continue;
-        int kind=abs_piece(p.board[m.from]);
-        quiet[i]=(profile!=MidProfile::R5RookPiece || kind==4)?1:0;
-        int rel=us==0?int(m.to>>3):7-int(m.to>>3);
-        int f=m.to&7;
-        uint16_t x=0;
-        if(kind==1 && (mask&0x00f)){
-            if((mask&1u) && r5_pawn_attacks(p,us,m.to))x|=1u<<0;
-            // A pawn push that attacks an opposing pawn or minor is a potential break.
-            uint64_t targets=fast_attack_tables.pawn[us][m.to];
-            if((mask&2u) && (targets&(enemy_pawns|p.piece_bits[them][1]|p.piece_bits[them][2])))x|=1u<<1;
-            if((mask&4u) && rel>=3&&rel<=5 && !r5_pawn_attacks(p,them,m.to))x|=1u<<2;
-            if((mask&8u) && r5_is_passed(p,us,m.to))x|=1u<<3;
-        }
-        if((kind==2||kind==3) && (mask&0x070)){
-            if(kind==2){
-                if((mask&0x10u)&&rel>=3&&rel<=5 && r5_pawn_attacks(p,us,m.to)
-                       && !r5_pawn_can_chase(p,them,m.to))x|=1u<<4;
-                // Knight attack onto the opponent king's ring.
-                if((mask&0x20u) && (fast_attack_tables.knight[m.to]&fast_attack_tables.king[enemy_king]))x|=1u<<5;
-            }
-            if(kind==3 && (mask&0x40u)){
-                uint64_t occ=p.occupied[0]|p.occupied[1];
-                uint64_t after=(occ&~bit(m.from))|bit(m.to);
-                // Count blockers after the quiet move; own occupancy must reflect delta.
-                // This feature is deliberately an approximation of safe bishop activity,
-                // not an exact legal-move count. Use ray available-square counts.
-                auto& old_cached=bishop_origin_mobility[m.from];
-                if(old_cached<0)old_cached=int8_t(r5_slider_mobility_reference_goal10(p,m.from,us,3,occ));
-                int old_mob=old_cached;
-                int new_mob=0;
-                static constexpr int df[4]={1,1,-1,-1},dr[4]={1,-1,1,-1};
-                for(int d=0;d<4;++d){int ff=f+df[d],rr=int(m.to>>3)+dr[d];
-                    while(ff>=0&&ff<8&&rr>=0&&rr<8){
-                        int sq=rr*8+ff;
-                        if(!(p.occupied[us]&bit(sq)) || sq==m.from)++new_mob;
-                        if(after&bit(sq))break;
-                        ff+=df[d];rr+=dr[d];
-                    }
-                }
-                if(new_mob>=old_mob+2)x|=1u<<6;
-            }
-        }
-        if(kind==4 && (mask&0x380)){
-            bool own_file=(own_pawn_files&(1u<<f))!=0;
-            bool enemy_file=(enemy_pawn_files&(1u<<f))!=0;
-            if((mask&0x80u) && !own_file)x|=1u<<7;
-            if((mask&0x100u)&&!own_file&&!enemy_file)x|=1u<<8;
-            if((mask&0x200u)&&(rel==6 || f==(enemy_king&7)))x|=1u<<9;
-        }
-        features[i]=x;
-    }
-    return features;
-}
-#endif
 std::array<uint16_t,256> r5_positional_features(const Position& p,const V8Step& base,
              std::array<uint8_t,256>& quiet,MidProfile profile){
-#ifdef DMT_VERIFY_GOAL10
-    auto oracle_quiet=quiet;
-#endif
     std::array<uint16_t,256> features{};
     const unsigned mask=r5_pos_mask(profile);
     const int us=p.side,them=us^1,enemy_king=p.king_square(them);
@@ -3113,8 +2953,16 @@ std::array<uint16_t,256> r5_positional_features(const Position& p,const V8Step& 
                 auto& old_cached=bishop_origin_mobility[m.from];
                 if(old_cached<0)old_cached=int8_t(r5_slider_mobility(p,m.from,us,3,occ));
                 int old_mob=old_cached;
-                const uint64_t own_after=(p.occupied[us]&~bit(m.from))|bit(m.to);
-                int new_mob=goal10_slider_mobility(m.to,3,after,own_after);
+                int new_mob=0;
+                static constexpr int df[4]={1,1,-1,-1},dr[4]={1,-1,1,-1};
+                for(int d=0;d<4;++d){int ff=f+df[d],rr=int(m.to>>3)+dr[d];
+                    while(ff>=0&&ff<8&&rr>=0&&rr<8){
+                        int sq=rr*8+ff;
+                        if(!(p.occupied[us]&bit(sq)) || sq==m.from)++new_mob;
+                        if(after&bit(sq))break;
+                        ff+=df[d];rr+=dr[d];
+                    }
+                }
                 if(new_mob>=old_mob+2)x|=1u<<6;
             }
         }
@@ -3127,9 +2975,6 @@ std::array<uint16_t,256> r5_positional_features(const Position& p,const V8Step& 
         }
         features[i]=x;
     }
-#ifdef DMT_VERIFY_GOAL10
-    if(features!=r5_positional_reference_goal10(p,base,oracle_quiet,profile)||quiet!=oracle_quiet)fail("goal10 mobility oracle mismatch");
-#endif
     return features;
 }
 V6Weights r5_quiet_cdf(const V6Weights& original,unsigned n,

@@ -2,7 +2,7 @@
 from pathlib import Path
 import subprocess,tempfile,json
 r=Path(__file__).resolve().parents[2]
-s=(r/'src/entropy_g10guard.cpp').read_text();old=(r/'src/entropy_g10index.cpp').read_text()
+s=(r/'src/experiments/goal10/entropy_g10guard.cpp').read_text();old=(r/'src/experiments/goal10/entropy_g10index.cpp').read_text()
 def part(s,a,b):return s[s.index(a):s.index(b,s.index(a))]
 code='#include <array>\n#include <cstdint>\n#include <stdexcept>\n#include <random>\n#include <iostream>\n#include <climits>\nvoid fail(const char* s){throw std::runtime_error(s);}\nconstexpr uint32_t V6_SCALE=16000;\nstruct V6Weights{std::array<uint16_t,256> weights{};uint32_t total=0;};\n'
 code+=part(s,'struct ExactDivisor {','V6Weights v6_quantize(')

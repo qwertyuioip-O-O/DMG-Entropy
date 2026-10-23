@@ -4,7 +4,7 @@ import argparse,subprocess
 from pathlib import Path
 ap=argparse.ArgumentParser();ap.add_argument('--out',default='build-r15');ap.add_argument('--cxx',default='g++');ap.add_argument('--verify-reuse',action='store_true');ap.add_argument('--no-lut',action='store_true');ap.add_argument('--opportunity-cache',action='store_true');ap.add_argument('--reference-candidates',action='store_true');args=ap.parse_args()
 root=Path(__file__).resolve().parents[2];out=Path(args.out).resolve();out.mkdir(parents=True,exist_ok=True)
-flags=[args.cxx,'-std=c++20','-O3','-DNDEBUG','-DDMT_FAST_TACTICAL','-I'+str(root/'include')]
+flags=[args.cxx,'-std=c++20','-O3','-DNDEBUG','-DDMT_FAST_TACTICAL','-I'+str(root/'include'),'-I'+str(root/'src')]
 if args.verify_reuse:flags+=['-DDMT_VERIFY_REUSE','-DDMT_VERIFY_JOINT_CANDIDATES','-DRMC_VERIFY_LEGAL_FAST']
 if not args.no_lut:flags+=['-DDMT_FEATURE_LUT']
 if args.opportunity_cache:flags+=['-DDMT_CACHE_OPPORTUNITY']

@@ -31,4 +31,4 @@ if a.timing:
     for mode in modes:
      s=subprocess.check_output([str(exe),'speed',str(r/path),'builtin',str(mode)],text=True).strip().split(',');w.writerow([dataset,rnd,*s]);f.flush()
     print('timing',dataset,rnd+1,'/6',flush=True)
- (results/'timing.json').write_text(json.dumps({'rounds':6,'variants':[0,1,3],'repetitions':3,'warm_roundtrip':True,'balanced_order':True,'no_parallel_build_or_tests':True,'platform':platform.platform(),'source_sha256':{str(x.relative_to(r)):hashlib.sha256(x.read_bytes()).hexdigest() for x in [r/'tools/native/r19_prior.cpp',r/'tools/native/r19_model.hpp',r/'src/dmt19_exp.hpp',r/'src/dmt19_prior.hpp']}},indent=2))
+ (results/'timing.json').write_text(json.dumps({'rounds':6,'variants':[0,1,3],'repetitions':3,'warm_roundtrip':True,'balanced_order':True,'no_parallel_build_or_tests':True,'platform':platform.platform(),'source_sha256':{str(x.relative_to(r)):hashlib.sha256(x.read_bytes()).hexdigest() for x in [r/'tools/native/r19_prior.cpp',r/'tools/native/r19_model.hpp',r/'src/generated/dmt19_exp.hpp',r/'src/generated/dmt19_prior.hpp']}},indent=2))

@@ -21,7 +21,7 @@ if args.full:
         run([out/'r14_matrix',source,r/f'data-r14/{source}.uci-bundle','7:1,0:1'],results/f'source-{source}.csv')
     for name,bundle in [('wcc13','benchmarks-r4/wcc2024_01_13.uci-bundle'),('human4','benchmarks-r4/human4.uci-bundle'),('r13_sealed','data-r13/sealed.uci-bundle'),('r13_source_holdout','data-r13/source_holdout.uci-bundle'),('r12_sealed','data-r12/new_sealed.uci-bundle')]:
         run([out/'r14_matrix',name,r/bundle,'7:1,0:1'],results/f'regression-{name}.csv')
-    ref=r/'reference-r13';flags=['g++','-std=c++20','-O3','-DNDEBUG','-DDMT_FAST_TACTICAL','-DDMT_FEATURE_LUT','-I'+str(ref/'include')]
+    ref=r/'reference-r13';flags=['g++','-std=c++20','-O3','-DNDEBUG','-DDMT_FAST_TACTICAL','-DDMT_FEATURE_LUT','-I'+str(ref/'include'),'-I'+str(ref/'src')]
     for name in ['entropy','rmc']:run(flags+['-c',ref/f'src/{name}.cpp','-o',out/f'reference-{name}.o'])
     exe=out/'reference-audit';run(flags+[r/'tools/native/dmt11_audit.cpp',out/'reference-entropy.o',out/'reference-rmc.o','-o',exe]);exe.chmod(0o755)
     count=0

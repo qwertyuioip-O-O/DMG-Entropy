@@ -3,8 +3,8 @@ from pathlib import Path
 import subprocess,tempfile
 r=Path(__file__).resolve().parents[2]
 code=r"""
-#include "goal10_op_table.hpp"
-#include "goal10_read_table.hpp"
+#include "experiments/goal10/goal10_op_table.hpp"
+#include "experiments/goal10/goal10_read_table.hpp"
 #include <random>
 #include <cassert>
 #include <iostream>

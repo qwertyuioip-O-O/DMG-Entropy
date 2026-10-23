@@ -48,6 +48,10 @@ jobs:
           python3 tools/validation/test_goal10_guard.py
       - name: Build current portable codec
         run: python3 tools/build/build_r19_current.py --out build-current
+      - name: Build R19 reference and scratch variants
+        run: |
+          python3 tools/build/build_r19.py --out build-r19 --paired
+          python3 tools/build/build_r19_scratch.py --out build-r19-scratch
       - name: Check current codec round trip
         run: |
           build-current/g10static eval examples/italian-opening.uci builtin 0,3
