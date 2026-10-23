@@ -1,4 +1,4 @@
-#include "../src/dmt16_expected.hpp"
+#include "../src/generated/dmt16_expected.hpp"
 #include <iostream>
 #include <random>
 #include <limits>

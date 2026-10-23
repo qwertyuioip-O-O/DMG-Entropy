@@ -13,12 +13,12 @@ for test in ['dmt_default_tests','dmt12_tests','dmt13_tests','dmt14_tests','dmt1
     (out/test).chmod(0o755);run([out/test],results/(test+'.log'))
 if args.full:
     dense.mkdir(parents=True,exist_ok=True)
-    frozen_flags=['g++','-std=c++20','-O3','-DNDEBUG','-DDMT_FAST_TACTICAL','-DDMT_FEATURE_LUT','-DDMT_DENSE_CATEGORY_UPDATES','-I'+str(r/'include'),'-I'+str(r/'src')]
+    frozen_flags=['g++','-std=c++20','-O3','-DNDEBUG','-DDMT_FAST_TACTICAL','-DDMT_FEATURE_LUT','-DDMT_DENSE_CATEGORY_UPDATES','-I'+str(r/'include'),'-I'+str(r/'src'),'-I'+str(r/'src')]
     run(frozen_flags+['-c',r/'benchmarks-r16/frozen-entropy.cpp','-o',dense/'entropy.o'])
     for name in ['r16_audit','r16_dump']:
         run(frozen_flags+[r/f'tools/native/{name}.cpp',dense/'entropy.o',out/'rmc.o','-o',dense/name]);(dense/name).chmod(0o755)
 if args.full or args.timing:
-    ref=r/'reference-r15';flags=['g++','-std=c++20','-O3','-DNDEBUG','-DDMT_FAST_TACTICAL','-DDMT_FEATURE_LUT','-I'+str(ref/'include')]
+    ref=r/'reference-r15';flags=['g++','-std=c++20','-O3','-DNDEBUG','-DDMT_FAST_TACTICAL','-DDMT_FEATURE_LUT','-I'+str(ref/'include'),'-I'+str(ref/'src')]
     for name in ['entropy','rmc']:run(flags+['-c',ref/f'src/{name}.cpp','-o',out/f'reference-{name}.o'])
     previous_speed=out/'previous252-speed';run(flags+[r/'tools/native/r16_reference_speed.cpp',out/'reference-entropy.o',out/'reference-rmc.o','-o',previous_speed]);previous_speed.chmod(0o755)
 if args.full:

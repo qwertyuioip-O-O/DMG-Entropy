@@ -7,7 +7,7 @@ r=Path(__file__).resolve().parents[2];o=Path(a.out).resolve();o.mkdir(parents=Tr
 expected=(r/'tools/native/r19_model.hpp').read_text().replace('PriorStep s;static_cast<MidStep&>(s)=mid_step_legacy(p,prev,own,ply,1,MidProfile::R10ComboTact4Full,c.core);','PriorStep s{mid_step_legacy(p,prev,own,ply,1,MidProfile::R10ComboTact4Full,c.core)};')
 assert expected==(r/'tools/native/r19_fast_model.hpp').read_text()
 assert (r/'tools/native/r19_fast.cpp').read_text()==(r/'tools/native/r19_prior.cpp').read_text().replace('#include "r19_model.hpp"','#include "r19_fast_model.hpp"')
-f=['g++','-std=c++20','-O3','-DNDEBUG','-DDMT_FAST_TACTICAL','-DDMT_DENSE_CATEGORY_UPDATES','-DDMT_FEATURE_LUT','-I'+str(r/'include')]
+f=['g++','-std=c++20','-O3','-DNDEBUG','-DDMT_FAST_TACTICAL','-DDMT_DENSE_CATEGORY_UPDATES','-DDMT_FEATURE_LUT','-I'+str(r/'include'),'-I'+str(r/'src')]
 subprocess.run([*f,'-c',str(r/'src/rmc.cpp'),'-o',str(o/'rmc.o')],check=True)
 subprocess.run([*f,str(r/'tools/native/r19_fast.cpp'),str(o/'rmc.o'),'-o',str(o/'r19_fast')],check=True)
 print(o/'r19_fast')

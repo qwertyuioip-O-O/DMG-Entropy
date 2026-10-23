@@ -1,4 +1,4 @@
-#include "../../src/goal10_compact_table.hpp"
+#include "../../src/experiments/goal10/goal10_compact_table.hpp"
 #include <unordered_map>
 #include <random>
 #include <iostream>

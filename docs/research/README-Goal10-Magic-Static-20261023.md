@@ -6,7 +6,7 @@ The new research default is g10static. The fixed original scratch+LTO anchor is 
 
 - Replace square-by-square bishop/rook/queen sliding generation with collision-checked unsigned multiply/shift table lookup. No PEXT, BMI, native target, fast-math or optional ISA is required. The immutable attack payload adds 861,184 bytes (841 KiB), plus descriptors.
 - Compute knight/king masks at compile time. The two corresponding runtime initialization guard symbols disappear.
-- Retain the current index probability model, its coefficients, learning semantics and archive framing. Original src/rmc.cpp remains intact; the selected research builder compiles generated src/rmc_g10static.cpp.
+- Retain the current index probability model, its coefficients, learning semantics and archive framing. Original src/rmc.cpp remains intact; the selected research builder compiles generated src/experiments/goal10/rmc_g10static.cpp.
 
 ## Results
 
@@ -63,7 +63,7 @@ Only the last candidate is selected. All 540 screening native calls, the 48 earl
 python3 tools/build/build_r19_current.py --out build-current
 # Optional deterministic regeneration of the frozen magic table:
 g++ -std=c++20 -O3 tools/native/generate_goal10_magic.cpp -o /tmp/goal10-magic-generator
-/tmp/goal10-magic-generator src/goal10_magic_data.hpp
+/tmp/goal10-magic-generator src/generated/goal10_magic_data.hpp
 python3 tools/validation/test_goal10_magic.py
 python3 tools/benchmarking/confirm_goal10_batches.py --baseline benchmarks-goal10-20261023/anchor/r19_scratch --candidate build-current/g10static --out fresh-confirmation --cpu 1
 python3 tools/analysis/audit_goal10_batches.py --dir fresh-confirmation

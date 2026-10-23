@@ -4,7 +4,7 @@ from pathlib import Path
 import subprocess,tempfile,json,hashlib,argparse
 p=argparse.ArgumentParser();p.add_argument('--out',required=True);a=p.parse_args()
 r=Path(__file__).resolve().parents[2];o=Path(a.out).resolve();o.mkdir(parents=True,exist_ok=True)
-s=(r/'src/entropy_g10ratio.cpp').read_text();helper=s.split('// BEGIN GOAL10_EXACT_OP_RATIO\n',1)[1].split('// END GOAL10_EXACT_OP_RATIO',1)[0]
+s=(r/'src/experiments/goal10/entropy_g10ratio.cpp').read_text();helper=s.split('// BEGIN GOAL10_EXACT_OP_RATIO\n',1)[1].split('// END GOAL10_EXACT_OP_RATIO',1)[0]
 code='''#include <cstdint>
 #include <limits>
 #include <random>

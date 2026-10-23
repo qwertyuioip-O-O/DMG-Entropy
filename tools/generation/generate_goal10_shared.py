@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 from pathlib import Path
 r=Path(__file__).resolve().parents[2]
-s=(r/'src/entropy_g10group.cpp').read_text()
+s=(r/'src/experiments/goal10/entropy_g10group.cpp').read_text()
 start=s.index('    void observe(const std::array<uint16_t,256>& f,const V6Weights& model,unsigned n,unsigned chosen,bool adaptive,unsigned explicit_rate=0){',s.index('struct MidResidual'))
 end=s.index('\n};',start)
 old=s[start:end]
@@ -15,6 +15,6 @@ helper='    std::array<int32_t,MID_F> expected_cache{};\n    bool expected_ready
 s=s[:pos]+helper+s[pos:]
 s=s.replace('ctx.mid.observe(s.additional,s.coded,s.base.moves.size,index,','shared_observe(ctx.mid,')
 s=s.replace('ctx.context_residual[s.context].observe(\n            s.additional,s.coded,s.base.moves.size,index,false,','shared_observe(ctx.context_residual[s.context],false,')
-(r/'src/entropy_g10shared.cpp').write_text(s)
+(r/'src/experiments/goal10/entropy_g10shared.cpp').write_text(s)
 for name in ['r17_g10group.cpp','r18_g10group.cpp','r19_g10group_model.hpp','r19_g10group.cpp']:
  (r/'tools/native'/name.replace('g10group','g10shared')).write_text((r/'tools/native'/name).read_text().replace('g10group','g10shared'))

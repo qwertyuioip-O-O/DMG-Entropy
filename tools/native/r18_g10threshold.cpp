@@ -2,7 +2,7 @@
 #define DMT_R17_REFERENCE_ONLY
 #include "r17_g10threshold.cpp"
 #undef DMT_R17_REFERENCE_ONLY
-#include "../../src/dmt18_prior.hpp"
+#include "../../src/generated/dmt18_prior.hpp"
 using Table18=std::array<int16_t,672>;
 struct Config18{int rate,cap,decay;};
 constexpr Config18 configs18[10]={{0,0,0},{1,8,6},{1,16,6},{1,32,8},{1,64,10},{2,16,6},{2,32,8},{2,64,10},{1,32,6},{0,0,0}};

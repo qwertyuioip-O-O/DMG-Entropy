@@ -3,7 +3,7 @@
 from pathlib import Path
 import subprocess,tempfile,json,os
 r=Path(__file__).resolve().parents[2]
-s=(r/'src/entropy_g10prefix.cpp').read_text();a=s.index('struct Goal10EntryPrefix {');b=s.index('struct V8Step {',a)
+s=(r/'src/experiments/goal10/entropy_g10prefix.cpp').read_text();a=s.index('struct Goal10EntryPrefix {');b=s.index('struct V8Step {',a)
 code='#include <array>\n#include <algorithm>\n#include <cassert>\nstruct V7Patterns {struct Opportunity {unsigned x;};};\n'+s[a:b]+r"""
 int main(){
  std::array<V7Patterns::Opportunity,256> values{};

@@ -1,4 +1,4 @@
-#include "../../src/entropy_r19_attacks.cpp"
+#include "../../src/experiments/r19/entropy_r19_attacks.cpp"
 #include <iostream>
 #include <random>
 using namespace rmc;

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 from pathlib import Path
-r=Path(__file__).resolve().parents[2];s=(r/'src/entropy_g10pages.cpp').read_text();start=s.index('struct OwnAttackReuse {');brace=s.index('{',start);i=brace+1;depth=1
+r=Path(__file__).resolve().parents[2];s=(r/'src/experiments/goal10/entropy_g10pages.cpp').read_text();start=s.index('struct OwnAttackReuse {');brace=s.index('{',start);i=brace+1;depth=1
 while depth:depth+=(s[i]=='{')-(s[i]=='}');i+=1
 assert s[i]==';';end=i+1;old=s[start:end]
 a=old.index('    static uint64_t piece_attack(');b=old.index('{',a);j=b+1;depth=1
@@ -50,10 +50,10 @@ new='''struct OwnAttackReuse {
         return out;
     }
 };'''
-s=s[:start]+new+s[end:];(r/'src/entropy_g10group.cpp').write_text(s)
-for old,new,incold,incnew in [('r17_g10pages.cpp','r17_g10group.cpp','entropy_g10pages.cpp','entropy_g10group.cpp'),('r18_g10pages.cpp','r18_g10group.cpp','r17_g10pages.cpp','r17_g10group.cpp'),('r19_g10pages_model.hpp','r19_g10group_model.hpp','r18_g10pages.cpp','r18_g10group.cpp'),('r19_g10pages.cpp','r19_g10group.cpp','r19_g10pages_model.hpp','r19_g10group_model.hpp')]:
+s=s[:start]+new+s[end:];(r/'src/experiments/goal10/entropy_g10group.cpp').write_text(s)
+for old,new,incold,incnew in [('r17_g10pages.cpp','r17_g10group.cpp','experiments/goal10/entropy_g10pages.cpp','experiments/goal10/entropy_g10group.cpp'),('r18_g10pages.cpp','r18_g10group.cpp','r17_g10pages.cpp','r17_g10group.cpp'),('r19_g10pages_model.hpp','r19_g10group_model.hpp','r18_g10pages.cpp','r18_g10group.cpp'),('r19_g10pages.cpp','r19_g10group.cpp','r19_g10pages_model.hpp','r19_g10group_model.hpp')]:
  (r/'tools/native'/new).write_text((r/'tools/native'/old).read_text().replace(incold,incnew))
-s=(r/'tools/native/test_r19_attacks.cpp').read_text().replace('entropy_r19_attacks.cpp','entropy_g10group.cpp').replace('reuse.after(p,next,m)','reuse.after(p,next)')
+s=(r/'tools/native/test_r19_attacks.cpp').read_text().replace('experiments/r19/entropy_r19_attacks.cpp','experiments/goal10/entropy_g10group.cpp').replace('reuse.after(p,next,m)','reuse.after(p,next)')
 s=s.replace('"4k3/8/8/8/8/8/4R3/4K3 b - - 0 1"','"4k3/8/8/8/8/8/4R3/4K3 b - - 0 1","4k3/8/8/8/8/PPPPPPPP/PPPPPPPP/4K3 w - - 0 1"')
 (r/'tools/native/test_goal10_group.cpp').write_text(s)
 print('Generated grouped own-attack unions with exact affected-source recomputation')

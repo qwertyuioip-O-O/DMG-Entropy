@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Exact bounded opportunity division seeded by portable floating division."""
 from pathlib import Path
-r=Path(__file__).resolve().parents[2];s=(r/'src/entropy_g10index.cpp').read_text()
+r=Path(__file__).resolve().parents[2];s=(r/'src/experiments/goal10/entropy_g10index.cpp').read_text()
 marker='V6Weights v09_cached_opportunity('
 helper='''// BEGIN GOAL10_EXACT_OP_RATIO
 static uint64_t goal10_exact_op_ratio(uint32_t actual,uint32_t expected){
@@ -25,6 +25,6 @@ a=s.index(marker);b=s.index('void v09_cached_observe(',a)
 chunk=s[a:b];assert chunk.count(old)==1
 chunk=chunk.replace(old,'std::clamp(goal10_exact_op_ratio(uint32_t(hits),uint32_t(exp)),uint64_t(341),uint64_t(3072))')
 s=s[:a]+chunk+s[b:]
-(r/'src/entropy_g10ratio.cpp').write_text(s)
+(r/'src/experiments/goal10/entropy_g10ratio.cpp').write_text(s)
 for name in ['r17_g10index.cpp','r18_g10index.cpp','r19_g10index_model.hpp','r19_g10index.cpp']:
  (r/'tools/native'/name.replace('g10index','g10ratio')).write_text((r/'tools/native'/name).read_text().replace('g10index','g10ratio'))

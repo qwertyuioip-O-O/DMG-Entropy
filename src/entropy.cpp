@@ -8,7 +8,7 @@
 #include "dmt14_features.hpp"
 #include "dmt15_features.hpp"
 #include "dmt16_features.hpp"
-#include "dmt16_expected.hpp"
+#include "generated/dmt16_expected.hpp"
 #include <unordered_map>
 #include <map>
 #include <deque>

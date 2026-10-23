@@ -10,5 +10,5 @@ new=r"""uint64_t sliding(const Position& p,int sq,bool orthogonal,bool diagonal)
     return moves&~p.occupied[color(p.board[sq])];
 }
 """
-s=s[:a]+new+s[b:];s='#include "goal10_magic_data.hpp"\n'+s
-(r/'src/rmc_g10magic.cpp').write_text(s)
+s=s[:a]+new+s[b:];s='#include "generated/goal10_magic_data.hpp"\n'+s
+(r/'src/experiments/goal10/rmc_g10magic.cpp').write_text(s)

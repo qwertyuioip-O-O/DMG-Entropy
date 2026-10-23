@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 from pathlib import Path
-r=Path(__file__).resolve().parents[2];s=(r/'src/entropy_g10group.cpp').read_text()
+r=Path(__file__).resolve().parents[2];s=(r/'src/experiments/goal10/entropy_g10group.cpp').read_text()
 a=s.index('std::array<uint16_t,256> r4_rank_features(');b=s.index('\n// DMT5:',a)
 old=s[a:b];new=old.replace('r4_rank_features(','r4_rank_features_count(',1)
 x=new.index('    std::sort(');y=new.index('    unsigned processed=0;',x)
@@ -25,6 +25,6 @@ std::array<uint16_t,256> r4_rank_features(const Position& p,const V8Step& base,c
 }
 '''
 s=s[:a]+'#ifdef DMT_VERIFY_COUNT\n'+old.replace('r4_rank_features(','r4_rank_features_reference(',1)+'\n#endif\n'+new+wrapper+s[b:]
-(r/'src/entropy_g10count.cpp').write_text(s)
+(r/'src/experiments/goal10/entropy_g10count.cpp').write_text(s)
 for name in ['r17_g10group.cpp','r18_g10group.cpp','r19_g10group_model.hpp','r19_g10group.cpp']:
  (r/'tools/native'/name.replace('g10group','g10count')).write_text((r/'tools/native'/name).read_text().replace('g10group','g10count'))

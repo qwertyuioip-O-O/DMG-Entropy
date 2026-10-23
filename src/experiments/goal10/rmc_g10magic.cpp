@@ -1,4 +1,4 @@
-#include "goal10_magic_data.hpp"
+#include "generated/goal10_magic_data.hpp"
 #include "rmc.hpp"
 #include "entropy.hpp"
 #include <algorithm>

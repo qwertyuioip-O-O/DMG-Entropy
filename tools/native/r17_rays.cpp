@@ -1,6 +1,6 @@
 // Isolated research codec: deliberately includes the unchanged reference core.
-#include "../../src/entropy_r19_rays.cpp"
-#include "../../src/dmt17_prior.hpp"
+#include "../../src/experiments/r19/entropy_r19_rays.cpp"
+#include "../../src/generated/dmt17_prior.hpp"
 #include <fstream>
 #include <iostream>
 #include <iomanip>

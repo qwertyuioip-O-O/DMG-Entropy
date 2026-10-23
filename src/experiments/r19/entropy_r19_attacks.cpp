@@ -1,4 +1,3 @@
-#include "goal10_op_table.hpp"
 #include "entropy.hpp"
 #include "dmg_v6.hpp"
 #include "dmg_v7.hpp"
@@ -9,7 +8,7 @@
 #include "dmt14_features.hpp"
 #include "dmt15_features.hpp"
 #include "dmt16_features.hpp"
-#include "dmt16_expected.hpp"
+#include "generated/dmt16_expected.hpp"
 #include <unordered_map>
 #include <map>
 #include <deque>
@@ -311,10 +310,8 @@ struct AttackCache {
 // Reuse unaffected own-piece attacks across legal candidate moves. Full keys
 // and occupancy deltas make this exact for captures, EP, castling and promotion.
 struct OwnAttackReuse {
-    std::array<uint16_t,64> source_id{},ray_sources{};
-    std::array<uint8_t,16> source_square{};
-    std::array<std::array<uint64_t,16>,4> unions{};
-    uint16_t all_ids=0;unsigned groups=0;bool fallback=false;
+    std::array<uint64_t,64> attacks{},rays{},without_leaper{};
+    uint64_t leapers=0,leaper_union=0;
     static uint64_t piece_attack(const Position& p,int sq) {
         const auto& t=fast_attack_tables;const int kind=abs_piece(p.board[sq]);
         const int side=p.board[sq]>0?0:1;
@@ -330,40 +327,32 @@ struct OwnAttackReuse {
         }
         return out;
     }
-    explicit OwnAttackReuse(const Position&p){
-        const unsigned count=std::popcount(p.occupied[p.side]);
-        if(count>16){fallback=true;return;}
-        all_ids=count==16?uint16_t(65535):uint16_t((1u<<count)-1);groups=(count+3)/4;
-        std::array<uint64_t,16> attacks{};unsigned id=0;
-        for(uint64_t pieces=p.occupied[p.side];pieces;pieces&=pieces-1,++id){
-            const int sq=std::countr_zero(pieces);const uint16_t flag=uint16_t(1u<<id);
-            source_square[id]=uint8_t(sq);source_id[sq]=flag;attacks[id]=piece_attack(p,sq);
-            const int kind=abs_piece(p.board[sq]);if(kind<3||kind>5)continue;
-            uint64_t rays=0;for(int d=kind==3?4:0;d<(kind==4?4:8);++d)rays|=fast_attack_tables.ray[sq][d];
-            while(rays){int target=std::countr_zero(rays);rays&=rays-1;ray_sources[target]|=flag;}
+    explicit OwnAttackReuse(const Position& p){
+        auto pieces=p.occupied[p.side];
+        while(pieces){int sq=std::countr_zero(pieces);pieces&=pieces-1;
+            attacks[sq]=piece_attack(p,sq);int kind=abs_piece(p.board[sq]);
+            if(kind>=3&&kind<=5)for(int d=kind==3?4:0;d<(kind==4?4:8);++d)rays[sq]|=fast_attack_tables.ray[sq][d];
         }
-        for(unsigned group=0;group<groups;++group)for(unsigned mask=1;mask<16;++mask){
-            unsigned low=std::countr_zero(mask);unions[group][mask]=unions[group][mask&(mask-1)]|attacks[group*4+low];
-        }
+        leapers=p.piece_bits[p.side][0]|p.piece_bits[p.side][1]|p.piece_bits[p.side][5];
+        uint64_t pending=leapers,prefix=0;
+        while(pending){int sq=std::countr_zero(pending);pending&=pending-1;
+            without_leaper[sq]=prefix;prefix|=attacks[sq];}
+        leaper_union=prefix;pending=leapers;uint64_t suffix=0;
+        while(pending){int sq=63-std::countl_zero(pending);pending&=~bit(sq);
+            without_leaper[sq]|=suffix;suffix|=attacks[sq];}
     }
-    uint64_t after(const Position&before,const Position&next)const{
-        const unsigned side=before.side;uint64_t out=0;
-        if(fallback){for(uint64_t pieces=next.occupied[side];pieces;pieces&=pieces-1)out|=piece_attack(next,std::countr_zero(pieces));}
-        else{
-            uint16_t affected=0;
-            uint64_t changed=(before.occupied[0]|before.occupied[1])^(next.occupied[0]|next.occupied[1]);
-            while(changed){int sq=std::countr_zero(changed);changed&=changed-1;affected|=ray_sources[sq];}
-            uint64_t removed=before.occupied[side]&~next.occupied[side];
-            while(removed){int sq=std::countr_zero(removed);removed&=removed-1;affected|=source_id[sq];}
-            const unsigned unchanged=all_ids&~affected;
-            for(unsigned group=0;group<groups;++group)out|=unions[group][(unchanged>>(group*4))&15];
-            unsigned pending=affected;
-            while(pending){unsigned id=std::countr_zero(pending);pending&=pending-1;int sq=source_square[id];if(next.occupied[side]&bit(sq))out|=piece_attack(next,sq);}
-            uint64_t added=next.occupied[side]&~before.occupied[side];
-            while(added){int sq=std::countr_zero(added);added&=added-1;out|=piece_attack(next,sq);}
+    uint64_t after(const Position& before,const Position& next,Move move)const{
+        const uint64_t changed=(before.occupied[0]|before.occupied[1])^(next.occupied[0]|next.occupied[1]);
+        uint64_t out=(leapers&bit(move.from))?without_leaper[move.from]:leaper_union;
+        const int moved_kind=abs_piece(next.board[move.to]);
+        if(moved_kind==1||moved_kind==2||moved_kind==6)out|=piece_attack(next,move.to);
+        const int side=before.side;
+        uint64_t pieces=next.piece_bits[side][2]|next.piece_bits[side][3]|next.piece_bits[side][4];
+        while(pieces){int sq=std::countr_zero(pieces);pieces&=pieces-1;
+            out|=(before.board[sq]!=next.board[sq]||(rays[sq]&changed))?piece_attack(next,sq):attacks[sq];
         }
 #ifdef DMT_VERIFY_REUSE
-        AttackCache oracle(next);if(out!=oracle.attacked_mask)fail("grouped attack reuse mismatch");
+        AttackCache oracle(next);if(out!=oracle.attacked_mask)fail("own attack reuse mismatch");
 #endif
         return out;
     }
@@ -895,8 +884,8 @@ struct V7Patterns {
     std::unordered_map<uint32_t,uint16_t> geometry;
     std::unordered_map<uint32_t,uint16_t> squares;
     struct Opportunity {uint32_t expected=0,actual=0;};
-    Goal10OpTable<Opportunity> geom_op;
-    mutable Goal10OpTable<Opportunity> square_op;
+    std::unordered_map<uint32_t,Opportunity> geom_op;
+    mutable std::unordered_map<uint32_t,Opportunity> square_op;
     static unsigned phase(const Position& p,unsigned ply) {
         if(ply<24 && material_phase(p)>=18)return 0;
         if(material_phase(p)<=8)return 2;
@@ -1266,7 +1255,7 @@ static uint32_t v8_relations(const Position& p,const Position& after,Move m,
     // Aggregate both attack maps once rather than repeatedly scanning every piece
     // for each relation. These maps include defended occupied squares.
     // The reference path is retained for independent byte comparisons.
-    const uint64_t our_attacks=reuse?reuse->after(p,after):AttackCache(after).attacked_mask;
+    const uint64_t our_attacks=reuse?reuse->after(p,after,m):AttackCache(after).attacked_mask;
     const bool danger_to=after.square_attacked(m.to,after.side);
     const bool supported=(our_attacks&bit(m.to))!=0;
     uint32_t flags=0;
@@ -2776,7 +2765,7 @@ V6Weights mid_residual_cdf(const V6Weights& original,unsigned n,
 #ifdef DMT_FEATURE_LUT
     const FeatureScore10 score_table(model.theta);
 #endif
-    std::array<uint64_t,256> raw; // All entries [0,n) are assigned before quantization.
+    std::array<uint64_t,256> raw{};
     for(unsigned i=0;i<n;++i){
 #ifdef DMT_FEATURE_LUT
         int score=score_table(extra[i]);
@@ -2801,8 +2790,7 @@ unsigned r4_context(const Position& p,const V8Step& base) {
 }
 // Relative ranks are calculated across the ACTUAL candidate set.
 // Cheap geometry and already computed tactical flags, no added board simulation.
-#ifdef DMT_VERIFY_COUNT
-std::array<uint16_t,256> r4_rank_features_reference(const Position& p,const V8Step& base,
+std::array<uint16_t,256> r4_rank_features(const Position& p,const V8Step& base,
                                            const std::array<uint16_t,256>& tactics) {
     std::array<uint16_t,256> flags{};
     std::array<int,256> score{};
@@ -2873,78 +2861,6 @@ std::array<uint16_t,256> r4_rank_features_reference(const Position& p,const V8St
         begin=end;
     }
     return flags;
-}
-
-#endif
-std::array<uint16_t,256> r4_rank_features_count(const Position& p,const V8Step& base,
-                                           const std::array<uint16_t,256>& tactics) {
-    std::array<uint16_t,256> flags{};
-    std::array<int8_t,256> score;
-    std::array<uint8_t,256> cls;
-    std::array<uint16_t,42> global{};
-    std::array<std::array<uint16_t,42>,12> histogram{};
-    std::array<unsigned,12> totals{};
-    std::array<int,12> maximum,cutoff;
-    maximum.fill(-16);cutoff.fill(-16);
-    int highest=-16;const unsigned n=base.moves.size;
-    for(unsigned i=0;i<n;++i){
-        Move m=base.moves.a[i].m;
-        bool capture=bool(base.flags[i]&(1u<<4));
-        int kind=abs_piece(p.board[m.from]);
-        int from_c=std::abs(2*int(m.from&7)-7)+std::abs(2*int(m.from>>3)-7);
-        int to_c=std::abs(2*int(m.to&7)-7)+std::abs(2*int(m.to>>3)-7);
-        int v=(from_c-to_c)/2;
-        if(kind==6)v=0;
-        if(kind==1)v/=2;
-        if(capture)v+=3;
-        if(tactics[i]&(1u<<0))v+=6;
-        if(tactics[i]&(1u<<1))v-=6;
-        if(tactics[i]&(1u<<8))v+=3;
-        if(tactics[i]&(1u<<9))v-=3;
-        if(tactics[i]&(1u<<2))v+=4;
-        if(tactics[i]&(1u<<3))v+=2;
-        if(tactics[i]&(1u<<6))v+=2;
-        if(v<-15||v>26)fail("relative rank score outside proven range");
-        const unsigned c=unsigned(2*(kind-1)+capture);
-        score[i]=int8_t(v);cls[i]=uint8_t(c);
-        ++global[v+15];++histogram[c][v+15];++totals[c];
-        maximum[c]=std::max(maximum[c],v);highest=std::max(highest,v);
-    }
-    // Only rank predicates are observed, so no ordered candidate list is needed.
-    int global_cutoff=highest;
-    for(int k=highest,seen=0;k>=-15;--k){
-        seen+=global[k+15];
-        if(unsigned(seen)>n/4){global_cutoff=k;break;}
-    }
-    for(unsigned c=0;c<12;++c)if(totals[c]>=3){
-        for(int k=maximum[c],seen=0;k>=-15;--k){
-            seen+=histogram[c][k+15];
-            if(unsigned(seen)>totals[c]/3){cutoff[c]=k;break;}
-        }
-    }
-    for(unsigned i=0;i<n;++i){
-        const unsigned c=cls[i];const int v=score[i];
-        const bool capture=bool(base.flags[i]&(1u<<4));
-        uint16_t bits=0;
-        if(v==highest)bits|=1u<<0;
-        if(v>=global_cutoff)bits|=1u<<1;
-        if(v==maximum[c] && totals[c]>=2)bits|=1u<<2;
-        if(totals[c]>=3 && v>=cutoff[c])bits|=1u<<3;
-        if(!capture && v>=2)bits|=1u<<4;
-        if(!capture && v<=-2)bits|=1u<<5;
-        if(capture && v>=6)bits|=1u<<6;
-        if(capture && v<=-4)bits|=1u<<7;
-        flags[i]=bits;
-    }
-    return flags;
-}
-
-std::array<uint16_t,256> r4_rank_features(const Position& p,const V8Step& base,const std::array<uint16_t,256>& tactics){
-    auto result=r4_rank_features_count(p,base,tactics);
-#ifdef DMT_VERIFY_COUNT
-    if(result!=r4_rank_features_reference(p,base,tactics))fail("counted rank mismatch");
-#endif
-    return result;
 }
 
 // DMT5: candidate-local positional signals, NEVER use the encoded/selected move.
@@ -3264,7 +3180,7 @@ std::array<uint16_t,256> r7_intent_features(const Position& p,const V8Step& base
 V6Weights r7_mix(const V6Weights& base,const V6Weights& expert,unsigned n,unsigned alpha){
     if(alpha==0)return base;
     if(alpha==100)return expert;
-    std::array<uint64_t,256> raw; // All entries [0,n) are assigned before quantization.
+    std::array<uint64_t,256> raw{};
     for(unsigned i=0;i<n;++i)raw[i]=uint64_t(100-alpha)*base.weights[i]*expert.total +
         uint64_t(alpha)*expert.weights[i]*base.total;
     return v6_quantize(raw,n);
@@ -4150,7 +4066,7 @@ void mid_step_into(MidStep& result,const Position& p,const Move* previous,const 
     uint32_t capture_mass=0;
     if(ctx.r16_active&&stage==1&&(ctx.r16.layout==1||ctx.r16.layout==5))for(unsigned i=0;i<n;++i)if(result.base.flags[i]&(1u<<4))capture_mass+=result.coded.weights[i];
     const unsigned source_context=unsigned(uint64_t(capture_mass)*2>result.coded.total);
-    std::array<uint64_t,256> raw; // All entries [0,n) are assigned before quantization.
+    std::array<uint64_t,256> raw{};
     for(unsigned i=0;i<n;++i){
         auto m=result.base.moves.a[i].m;const unsigned piece=unsigned(abs_piece(p.board[m.from])-1);
         const unsigned rank=p.side?7-(m.to>>3):(m.to>>3);

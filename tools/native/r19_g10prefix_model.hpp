@@ -2,8 +2,8 @@
 #define DMT_R18_REFERENCE_ONLY
 #include "r18_g10prefix.cpp"
 #undef DMT_R18_REFERENCE_ONLY
-#include "../../src/dmt19_exp.hpp"
-#include "../../src/dmt19_prior.hpp"
+#include "../../src/generated/dmt19_exp.hpp"
+#include "../../src/generated/dmt19_prior.hpp"
 using Table19=std::array<int16_t,720>;
 Table19 load19(const char*path){Table19 a{};if(std::string(path)=="builtin")return dmt19_prior_v1;if(std::string(path)=="zero")return a;std::ifstream f(path);int v;for(auto&x:a){if(!(f>>v)||v< -256||v>256)fail("table19");x=int16_t(v);}if(f>>v)fail("table19 extra");return a;}
 uint32_t id19(const Table19&t){std::vector<uint8_t>b;for(int v:t){b.push_back(uint8_t(v));b.push_back(uint8_t(uint16_t(v)>>8));}return v6_crc(b.data(),b.size());}

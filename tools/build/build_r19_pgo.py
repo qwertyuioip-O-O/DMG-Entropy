@@ -17,7 +17,7 @@ training=o/'pgo-training.uci-bundle';training.write_text('\n'.join(selected)+'\n
 manifest={'source':str(source),'source_sha256':hashlib.sha256(source.read_bytes()).hexdigest(),'selection':'first 160 SHA256-sorted unique normalized dev13 games after excluding all exact full-game sequences in three timing datasets','training_games':len(selected),'training_plies':sum(len(x.split()) for x in selected),'training_sha256':hashlib.sha256(training.read_bytes()).hexdigest(),'exact_game_overlap_with_timing_data':0,'purpose':'compiler execution profile only; no coefficient fitting','compiler':subprocess.check_output(['g++','--version'],text=True).splitlines()[0]}
 (o/'training-manifest.json').write_text(json.dumps(manifest,indent=2))
 binary=o/'r19_pgo'
-base=['g++','-std=c++20','-O3','-flto=1','-DNDEBUG','-DDMT_FAST_TACTICAL','-DDMT_DENSE_CATEGORY_UPDATES','-DDMT_FEATURE_LUT','-I'+str(r/'include')]
+base=['g++','-std=c++20','-O3','-flto=1','-DNDEBUG','-DDMT_FAST_TACTICAL','-DDMT_DENSE_CATEGORY_UPDATES','-DDMT_FEATURE_LUT','-I'+str(r/'include'),'-I'+str(r/'src')]
 sources=[str(r/'tools/native/r19_inplace.cpp'),str(r/'src/rmc.cpp')]
 commands=[]
 cmd=[*base,'-fprofile-generate='+str(profiles),*sources,'-o',str(binary)];commands.append(cmd);subprocess.run(cmd,check=True)

@@ -4,7 +4,7 @@ import argparse,subprocess,csv
 from pathlib import Path
 ap=argparse.ArgumentParser();ap.add_argument('--build',default='build-r11');ap.add_argument('--out',default='comparison-r11');ap.add_argument('--speed',action='store_true');args=ap.parse_args()
 r=Path(__file__).resolve().parents[2];build=Path(args.build).resolve();out=Path(args.out).resolve();out.mkdir(parents=True,exist_ok=True)
-ref=r/'reference-dmt10';flags=['g++','-std=c++20','-O3','-DNDEBUG','-DDMT_FAST_TACTICAL','-I'+str(ref/'include')]
+ref=r/'reference-dmt10';flags=['g++','-std=c++20','-O3','-DNDEBUG','-DDMT_FAST_TACTICAL','-I'+str(ref/'include'),'-I'+str(ref/'src')]
 for name in ['entropy','rmc']:subprocess.run(flags+['-c',str(ref/'src'/f'{name}.cpp'),'-o',str(out/f'{name}.o')],check=True)
 for name,tool in [('audit','dmt11_audit.cpp'),('speed','mid_speed.cpp')]:
  subprocess.run(flags+[str(r/'tools'/tool),str(out/'entropy.o'),str(out/'rmc.o'),'-o',str(out/name)],check=True)

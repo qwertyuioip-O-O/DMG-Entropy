@@ -1,6 +1,6 @@
 // Isolated research codec: deliberately includes the unchanged reference core.
-#include "../../src/entropy_g10combo.cpp"
-#include "../../src/dmt17_prior.hpp"
+#include "../../src/experiments/goal10/entropy_g10combo.cpp"
+#include "../../src/generated/dmt17_prior.hpp"
 #include <fstream>
 #include <iostream>
 #include <iomanip>

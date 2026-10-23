@@ -28,4 +28,4 @@ uint64_t sliding(const Position& p,int sq,bool orthogonal,bool diagonal){
     return moves&~p.occupied[color(p.board[sq])];
 }
 """
-(r/'src/rmc_g10rays.cpp').write_text(s[:a]+new+s[b:])
+(r/'src/experiments/goal10/rmc_g10rays.cpp').write_text(s[:a]+new+s[b:])
