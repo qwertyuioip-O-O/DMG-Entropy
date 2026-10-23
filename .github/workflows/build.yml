@@ -2,7 +2,7 @@ name: Build and regression tests
 
 on:
   push:
-    branches: [main, chore/organize-development-tools]
+    branches: [main]
   pull_request:
 
 permissions:
@@ -14,6 +14,8 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - name: Check Python syntax
         run: |
           python3 - <<'PY'
@@ -25,10 +27,20 @@ jobs:
         run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
       - name: Build all CMake targets
         run: cmake --build build --parallel 2
+      - name: Prepare missing fixtures from the frozen reference codec
+        run: |
+          mkdir -p build-reference
+          git archive 0a7824d978fb1199c8619ad0c69f10dae8da1aa8 src include | tar -x -C build-reference
+          g++ -std=c++20 -O2 -DDMT_FAST_TACTICAL -DDMT_DENSE_CATEGORY_UPDATES -DDMT_FEATURE_LUT \
+            -Ibuild-reference/include tools/native/prepare_ci_fixtures.cpp \
+            build-reference/src/rmc.cpp build-reference/src/entropy.cpp -o build-reference/prepare
+          build-reference/prepare
       - name: Run codec regression tests
         run: ctest --test-dir build --output-on-failure --parallel 2 --timeout 600
       - name: Check measurement guard
         run: python3 tools/validation/test_goal10_measurement_guard.py --out build/measurement-guard.json
+      - name: Check relocated code generators
+        run: python3 tools/validation/test_generator_paths.py
       - name: Check generated table implementations
         run: |
           python3 tools/validation/test_goal10_read.py
