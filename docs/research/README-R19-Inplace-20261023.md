@@ -4,7 +4,7 @@ This experiment extends the previous single-site initialization candidate across
 
 The change removes temporary aggregate construction/assignment across the legacy → calibrated → prior wrappers where direct-output callers are used. A fresh initialized result is still required for every call: flags and inactive fields are not left over from the previous position. This experiment does not remove arbitrary initialization or assume inactive members are safe to leave uninitialized. State reuse across plies is deferred pending a complete read/write audit.
 
-`tools/generate_r19_inplace.py` deterministically derives isolated files from frozen sources using exact matched substitutions. The model operations and observation order are preserved. The earlier `r19_fast` candidate is not used as the baseline; comparisons are against the original R19 executable.
+`tools/generation/generate_r19_inplace.py` deterministically derives isolated files from frozen sources using exact matched substitutions. The model operations and observation order are preserved. The earlier `r19_fast` candidate is not used as the baseline; comparisons are against the original R19 executable.
 
 ## Validation and measurement protocol
 
@@ -17,9 +17,9 @@ This is a short sequential experiment on one pinned host core. It does not estab
 ## Reproduce
 
 ```sh
-python3 tools/build_r19.py --out build-r19
-python3 tools/build_r19_inplace.py --out build-r19-inplace
-python3 tools/benchmark_r19_inplace.py --baseline build-r19/r19_prior --candidate build-r19-inplace/r19_inplace --out fresh-inplace-study
+python3 tools/build/build_r19.py --out build-r19
+python3 tools/build/build_r19_inplace.py --out build-r19-inplace
+python3 tools/benchmarking/benchmark_r19_inplace.py --baseline build-r19/r19_prior --candidate build-r19-inplace/r19_inplace --out fresh-inplace-study
 ```
 
 ## Measured outcome

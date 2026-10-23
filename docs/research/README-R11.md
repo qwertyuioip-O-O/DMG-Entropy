@@ -78,9 +78,9 @@ Human23/Human4/WCC13은 반복 사용된 개발 자료다. Fischer3도 이전 �
 프로젝트 루트에서:
 
 ```bash
-python3 tools/build_r11.py --out build-r11
-python3 tools/reproduce_r11.py --build build-r11 --out reproduced-r11
-python3 tools/compare_r11.py --build build-r11 --out comparison-r11 --speed
+python3 tools/build/build_r11.py --out build-r11
+python3 tools/reproduction/reproduce_r11.py --build build-r11 --out reproduced-r11
+python3 tools/analysis/compare_r11.py --build build-r11 --out comparison-r11 --speed
 ```
 
 `compare_r11.py`는 동봉한 `reference-dmt10`의 원본 소스를 빌드해 전체 243개 프로파일의 실제 아카이브 바이트를 비교한다. 이 디렉터리는 최적화 전 원본이다. 기본 234 및 새 후보의 사용 예:

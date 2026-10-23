@@ -1,3 +1,3 @@
-# Results reporting
+# Reporting
 
-Versioned result summary tools. The original top-level script paths remain available as compatibility launchers.
+Scripts live here; run them from the repository root. See [tool directory guide](../README.md).

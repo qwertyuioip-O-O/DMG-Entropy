@@ -115,16 +115,16 @@ CPU 시간 기준 처리량 변화 중앙값은 인코딩+2.29%(5/8회 빠름), 
 기본 빌드는 Python3와 g++ C++20이면 된다. 재학습에만 NumPy/SciPy, PGN 준비에만 python-chess가 필요하다. CPU 고정 진단은 Linux 환경이다.
 
 ```bash
-python3 tools/build_r19.py --out build-r19
+python3 tools/build/build_r19.py --out build-r19
 build-r19/r19_prior pack data-r19/heldout.uci-bundle builtin 3 result.d19
 build-r19/r19_prior unpack result.d19 builtin decoded.uci-bundle
 build-r19/r19_prior test benchmarks-r4/human4.uci-bundle builtin
-python3 tools/reproduce_r19.py --out build-r19 --controls --blocks --timing
+python3 tools/reproduction/reproduce_r19.py --out build-r19 --controls --blocks --timing
 # 선택 사항: dev로만 다시 학습
-python3 tools/reproduce_r19.py --out build-r19 --retrain
+python3 tools/reproduction/reproduce_r19.py --out build-r19 --retrain
 # 선택 사항: CPU 고정 교차 진단
-python3 tools/build_r19.py --out build-r19 --paired
-python3 tools/benchmark_r19_pair.py build-r19/r19_pair_speed data-r19/heldout.uci-bundle --out paired-results
+python3 tools/build/build_r19.py --out build-r19 --paired
+python3 tools/benchmarking/benchmark_r19_pair.py build-r19/r19_pair_speed data-r19/heldout.uci-bundle --out paired-results
 ```
 
 최종 빌드 후 재현 스크립트의 실행 부분을 순서대로 수행했다. 이후 표 완전성 보완, 실제 파일 검증, CPU 고정 진단은 별도로 실행했다. 최종 휴대용 스크립트를 빌드부터 한 번에 모두 다시 실행한 것은 아니다. 학습 환경에 따라 마지막 반올림이 달라질 수 있어 frozen 모델 해시를 기준으로 비교한다.

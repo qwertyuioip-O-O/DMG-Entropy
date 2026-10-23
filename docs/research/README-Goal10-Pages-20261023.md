@@ -12,7 +12,7 @@ Presence bits preserve the distinction between an absent key and an inserted zer
 
 ## Validation
 
-`tools/test_goal10_pages.cpp` differentially compares the paged container against `unordered_map` over 100,000 seeded random insert/read/update operations across the full key range. It passed 297,620 checks including zero-value presence, stable pointers, deep copy, assignment, move and upper-bound rejection.
+`tools/native/test_goal10_pages.cpp` differentially compares the paged container against `unordered_map` over 100,000 seeded random insert/read/update operations across the full key range. It passed 297,620 checks including zero-value presence, stable pointers, deep copy, assignment, move and upper-bound rejection.
 
 Release validation checks byte-identical archives against the fixed anchor for all five modes × all three datasets, with each pack's roundtrip, and runs the existing 1,226-check suite. The generator changes only the two opportunity-table types and adds the table header; model/source snapshots remain preserved.
 
@@ -25,12 +25,12 @@ No builds, tests, training or other benchmarks run concurrently with timing. Raw
 ## Reproduce
 
 ```sh
-python3 tools/build_goal10_pages.py --out build-goal10-pages
-python3 tools/benchmark_goal10_pages.py --baseline benchmarks-goal10-20261023/anchor/r19_scratch --candidate build-goal10-pages/g10pages --out fresh-pages-screen
-python3 tools/confirm_goal10.py --baseline benchmarks-goal10-20261023/anchor/r19_scratch --candidate build-goal10-pages/g10pages --cpu 1 --out fresh-pages-confirm
+python3 tools/build/build_goal10_pages.py --out build-goal10-pages
+python3 tools/benchmarking/benchmark_goal10_pages.py --baseline benchmarks-goal10-20261023/anchor/r19_scratch --candidate build-goal10-pages/g10pages --out fresh-pages-screen
+python3 tools/benchmarking/confirm_goal10.py --baseline benchmarks-goal10-20261023/anchor/r19_scratch --candidate build-goal10-pages/g10pages --cpu 1 --out fresh-pages-confirm
 ```
 
-Build `tools/test_goal10_pages.cpp` separately with C++20 to reproduce the container oracle. Both codec executables retain the same `-O3 -flto=1` flags with no PGO, fast-math or host-specific ISA. The general pack profile234 remains separate from the research speed build.
+Build `tools/native/test_goal10_pages.cpp` separately with C++20 to reproduce the container oracle. Both codec executables retain the same `-O3 -flto=1` flags with no PGO, fast-math or host-specific ISA. The general pack profile234 remains separate from the research speed build.
 
 ## CPU0 screening
 

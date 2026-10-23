@@ -60,7 +60,7 @@ Kasparov–Deep Blue 1997의 6판(519반수)은 별도 확인 자료다. 인간�
 - [Lichess 공개 기보 API](https://lichess.org/api/games/user/DrNykterstein?max=100&moves=true&tags=true&clocks=false&evals=false)
 - [python-chess의 Kasparov–Deep Blue PGN](https://raw.githubusercontent.com/niklasf/python-chess/master/data/pgn/kasparov-deep-blue-1997.pgn)
 
-`tools/audit_r12_data.py`는 106개 수열의 해시·반수·자료 간 중복을 재검사한다. 다운로드 이후 표본을 다시 받지 않아도 동봉한 수열로 모든 압축 실험을 재현할 수 있다.
+`tools/analysis/audit_r12_data.py`는 106개 수열의 해시·반수·자료 간 중복을 재검사한다. 다운로드 이후 표본을 다시 받지 않아도 동봉한 수열로 모든 압축 실험을 재현할 수 있다.
 
 ## 4. 실제 압축 결과
 
@@ -123,8 +123,8 @@ CMake가 없는 환경이라 실제 빌드와 검사는 동봉한 g++ 빌드 스
 일반 빌드와 재현:
 
 ```bash
-python3 tools/build_r12.py --out build-r12
-python3 tools/reproduce_r12.py --build build-r12 --out reproduced-r12 --search --full
+python3 tools/build/build_r12.py --out build-r12
+python3 tools/reproduction/reproduce_r12.py --build build-r12 --out reproduced-r12 --search --full
 ./build-r12/dmg_mid main
 ./build-r12/dmg_mid pack fast.dmt examples/heldout/*.uci
 ./build-r12/dmg_mid pack r12-joint-all compact.dmt examples/heldout/*.uci
@@ -134,8 +134,8 @@ python3 tools/reproduce_r12.py --build build-r12 --out reproduced-r12 --search -
 LTO와 같은 회차 비교:
 
 ```bash
-python3 tools/build_r12_lto.py --out build-r12-lto
-python3 tools/benchmark_r12.py --build build-r12 --lto-build build-r12-lto --out benchmark-r12 --audit
+python3 tools/build/build_r12_lto.py --out build-r12-lto
+python3 tools/benchmarking/benchmark_r12.py --build build-r12 --lto-build build-r12-lto --out benchmark-r12 --audit
 ```
 
 일반 CMake 경로도 유지한다. LTO는 `-DCMAKE_INTERPROCEDURAL_OPTIMIZATION=ON`으로 선택할 수 있다. `DMT_FEATURE_LUT` 기본 ON, `DMT_CACHE_OPPORTUNITY` 기본 OFF다. 원본 후보 생성기는 `DMT_FAST_JOINT_CANDIDATES=OFF`로 비교할 수 있다. `DMT_VERIFY_JOINT_CANDIDATES`, `DMT_VERIFY_REUSE`, `RMC_VERIFY_LEGAL_FAST`는 검사용이다.

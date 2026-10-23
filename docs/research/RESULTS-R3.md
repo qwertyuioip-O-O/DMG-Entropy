@@ -111,7 +111,7 @@ ctest --test-dir build --output-on-failure
 ./build/dmg_mid unpack result.dmt decoded/
 ```
 
-New human PGNs can be processed with `tools/prepare_pgn.py`. The large official Lichess game database is publicly documented at https://database.lichess.org/standard/, but download access was unavailable from this computation container. No large independent human corpus was obtained here.
+New human PGNs can be processed with `tools/data-preparation/prepare_pgn.py`. The large official Lichess game database is publicly documented at https://database.lichess.org/standard/, but download access was unavailable from this computation container. No large independent human corpus was obtained here.
 
 ## Research decision
 

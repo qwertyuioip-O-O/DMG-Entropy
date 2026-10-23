@@ -73,11 +73,11 @@ R5 제거 시 quiet 분류는 유지하고, 단계 제거는 해당 특징 추�
 오프닝·엔드게임 및 R12 all-phase 범주 모델은 구조 mask의 영향을 받지 않는다.
 
 ```bash
-python3 tools/reproduce_r13.py --out build-r13 --full --timing
+python3 tools/reproduction/reproduce_r13.py --out build-r13 --full --timing
 ```
 
 g++ C++20과 Python 표준 라이브러리로 스냅샷 실험을 재현한다.
-최초 PGN 정제만 python-chess가 필요하며 tools/prepare_r13_data.py에 담았다.
+최초 PGN 정제만 python-chess가 필요하며 tools/data-preparation/prepare_r13_data.py에 담았다.
 reference-r12는 변경 전 소스이며 같은 O3/FAST_TACTICAL/FEATURE_LUT 옵션으로
 컴파일한다. PGO, LTO, opportunity cache는 이번 비교에 사용하지 않았다.
 속도는 11라운드의 교대 측정에서 처리량 비율 중앙값을 비교했다.

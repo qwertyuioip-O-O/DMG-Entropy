@@ -1,3 +1,3 @@
-# Historical reproduction
+# Reproduction
 
-Version-specific reproduction workflows. Existing top-level entry points are kept as launchers for published commands.
+Scripts live here; run them from the repository root. See [tool directory guide](../README.md).

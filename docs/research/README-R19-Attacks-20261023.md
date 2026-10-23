@@ -8,7 +8,7 @@ The existing `OwnAttackReuse` already cached individual attacks but still traver
 
 Exclusion uses unions, not subtraction/XOR: overlapping attacks must remain present. Captures do not remove other friendly pieces. Castling changes the king's leaper contribution and the rook's slider contribution. Promotion removes the pawn contribution and adds the promoted piece through either the leaper or slider path. En passant changes occupancy and therefore retains the existing slider-ray invalidation.
 
-`tools/generate_r19_attacks.py` derives this isolated candidate from the retained direct-output sources. No learned coefficients, integer quantization operations, observation order or container framing are changed.
+`tools/generation/generate_r19_attacks.py` derives this isolated candidate from the retained direct-output sources. No learned coefficients, integer quantization operations, observation order or container framing are changed.
 
 ## Profiling and correctness
 
@@ -27,12 +27,12 @@ Paired throughput gain is baseline time divided by candidate time, minus one; di
 ## Reproduce
 
 ```sh
-python3 tools/build_r19_inplace.py --out build-r19-inplace
-python3 tools/build_r19_attacks.py --out build-r19-attacks
-python3 tools/benchmark_r19_attacks.py --baseline build-r19-inplace/r19_inplace --candidate build-r19-attacks/r19_attacks --out fresh-attacks-study
+python3 tools/build/build_r19_inplace.py --out build-r19-inplace
+python3 tools/build/build_r19_attacks.py --out build-r19-attacks
+python3 tools/benchmarking/benchmark_r19_attacks.py --baseline build-r19-inplace/r19_inplace --candidate build-r19-attacks/r19_attacks --out fresh-attacks-study
 ```
 
-For the standalone attack oracle, compile `tools/test_r19_attacks.cpp` with the standard flags, include path and `rmc.o`. For dataset mask verification, compile `tools/r19_attacks.cpp` with the additional `-DDMT_VERIFY_REUSE`, then run `eval BUNDLE builtin 3`. The generator requires the retained direct-output source snapshot; build it first as above.
+For the standalone attack oracle, compile `tools/native/test_r19_attacks.cpp` with the standard flags, include path and `rmc.o`. For dataset mask verification, compile `tools/native/r19_attacks.cpp` with the additional `-DDMT_VERIFY_REUSE`, then run `eval BUNDLE builtin 3`. The generator requires the retained direct-output source snapshot; build it first as above.
 
 ## Measured outcome
 

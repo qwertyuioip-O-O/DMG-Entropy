@@ -30,11 +30,11 @@ A promising cumulative candidate is then confirmed against the same anchor on CP
 ## Reproduce
 
 ```sh
-python3 tools/build_goal10_pages.py --out build-pages
-python3 tools/build_goal10_compact.py --out build-compact
-python3 tools/build_goal10_div.py --base compact --out build-div
-python3 tools/test_goal10_div.py --out test-div
-python3 tools/benchmark_goal10_div.py --baseline benchmarks-goal10-20261023/anchor/r19_scratch --stage1 build-pages/g10pages --candidate build-div/g10div --cpu 1 --out fresh-div-comparison
+python3 tools/build/build_goal10_pages.py --out build-pages
+python3 tools/build/build_goal10_compact.py --out build-compact
+python3 tools/build/build_goal10_div.py --base compact --out build-div
+python3 tools/validation/test_goal10_div.py --out test-div
+python3 tools/benchmarking/benchmark_goal10_div.py --baseline benchmarks-goal10-20261023/anchor/r19_scratch --stage1 build-pages/g10pages --candidate build-div/g10div --cpu 1 --out fresh-div-comparison
 ```
 
 All retain ordinary `-O3 -flto=1`, without PGO, fast-math or host-specific ISA. Model coefficients and archive framing are unchanged. General pack profile234 remains a separate default.

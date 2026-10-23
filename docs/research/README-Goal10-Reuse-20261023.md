@@ -30,9 +30,9 @@ The extra initialized pointer array and step copying are possible costs, not iso
 ## Reproduce
 
 ```sh
-python3 tools/build_goal10_reuse.py --out ../goal10-reuse-build
-python3 tools/build_goal10_reuse.py --verify --out ../goal10-reuse-oracle
-python3 tools/benchmark_goal10_guarded.py --baseline benchmarks-goal10-20261023/anchor/r19_scratch --stage1 benchmarks-goal10-index-20261023/selected/g10index --candidate ../goal10-reuse-build/g10reuse --out benchmarks-goal10-reuse-20261023-new --cpu 1
+python3 tools/build/build_goal10_reuse.py --out ../goal10-reuse-build
+python3 tools/build/build_goal10_reuse.py --verify --out ../goal10-reuse-oracle
+python3 tools/benchmarking/benchmark_goal10_guarded.py --baseline benchmarks-goal10-20261023/anchor/r19_scratch --stage1 benchmarks-goal10-index-20261023/selected/g10index --candidate ../goal10-reuse-build/g10reuse --out benchmarks-goal10-reuse-20261023-new --cpu 1
 ```
 
 Raw data, validation, pointer oracle, protocol, executable and source hashes are in `benchmarks-goal10-reuse-20261023`. Preflight data is retained in `benchmarks-goal10-select-20261023` (directory naming predates candidate selection).

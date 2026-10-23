@@ -1,6 +1,6 @@
 # R19 CLI profiling and initialization candidate — 2026-10-23
 
-The frozen R19 codec and learned tables remain unchanged. This experiment adds `tools/r19_fast.cpp` and `tools/r19_fast_model.hpp`, an isolated candidate differing only in how `base19` initializes its `PriorStep` base object. Instead of default-constructing the large object and assigning its `MidStep` base, it aggregate-initializes the base directly from the returned `MidStep`. Member default initializers still initialize the two extra weight snapshots. Archive format and model semantics are unchanged.
+The frozen R19 codec and learned tables remain unchanged. This experiment adds `tools/native/r19_fast.cpp` and `tools/native/r19_fast_model.hpp`, an isolated candidate differing only in how `base19` initializes its `PriorStep` base object. Instead of default-constructing the large object and assigning its `MidStep` base, it aggregate-initializes the base directly from the returned `MidStep`. Member default initializers still initialize the two extra weight snapshots. Archive format and model semantics are unchanged.
 
 ## Evidence and scope
 
@@ -11,9 +11,9 @@ Instrumentation changes code generation and call costs. These percentages identi
 ## Reproduction
 
 ```sh
-python3 tools/build_r19.py --out build-r19
-python3 tools/build_r19_fast.py --out build-r19-fast
-python3 tools/benchmark_r19_fast.py --baseline build-r19/r19_prior --candidate build-r19-fast/r19_fast --out fresh-fast-study
+python3 tools/build/build_r19.py --out build-r19
+python3 tools/build/build_r19_fast.py --out build-r19-fast
+python3 tools/benchmarking/benchmark_r19_fast.py --baseline build-r19/r19_prior --candidate build-r19-fast/r19_fast --out fresh-fast-study
 ```
 
 Both timed executables use the standard `-O3` flags without profiling instrumentation, the same compiler and the same `rmc.o` in the recorded run. The candidate build script checks that its source difference is limited to the specified initialization and include routing.

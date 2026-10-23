@@ -3,7 +3,7 @@ import argparse,csv,subprocess
 from pathlib import Path
 ap=argparse.ArgumentParser();ap.add_argument('--build',default='build-r12');ap.add_argument('--out',default='reproduced-r12');ap.add_argument('--search',action='store_true');ap.add_argument('--full',action='store_true');args=ap.parse_args()
 r=Path(__file__).resolve().parents[2];b=Path(args.build).resolve();out=Path(args.out).resolve();out.mkdir(parents=True,exist_ok=True)
-subprocess.run(['python3',r/'tools/audit_r12_data.py'],check=True)
+subprocess.run(['python3',r/'tools/analysis/audit_r12_data.py'],check=True)
 for test in ['dmt_default_tests','dmt10_tests','dmt11_tests','dmt12_tests','dmt11_kernel_tests']:
  program=b/test;program.chmod(program.stat().st_mode|0o111);subprocess.run([program],check=True)
 if args.full:

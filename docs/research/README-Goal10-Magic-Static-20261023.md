@@ -60,13 +60,13 @@ Only the last candidate is selected. All 540 screening native calls, the 48 earl
 ## Reproduce
 
 ```sh
-python3 tools/build_r19_current.py --out build-current
+python3 tools/build/build_r19_current.py --out build-current
 # Optional deterministic regeneration of the frozen magic table:
-g++ -std=c++20 -O3 tools/generate_goal10_magic.cpp -o /tmp/goal10-magic-generator
+g++ -std=c++20 -O3 tools/native/generate_goal10_magic.cpp -o /tmp/goal10-magic-generator
 /tmp/goal10-magic-generator src/goal10_magic_data.hpp
-python3 tools/test_goal10_magic.py
-python3 tools/confirm_goal10_batches.py --baseline benchmarks-goal10-20261023/anchor/r19_scratch --candidate build-current/g10static --out fresh-confirmation --cpu 1
-python3 tools/audit_goal10_batches.py --dir fresh-confirmation
+python3 tools/validation/test_goal10_magic.py
+python3 tools/benchmarking/confirm_goal10_batches.py --baseline benchmarks-goal10-20261023/anchor/r19_scratch --candidate build-current/g10static --out fresh-confirmation --cpu 1
+python3 tools/analysis/audit_goal10_batches.py --dir fresh-confirmation
 ```
 
-Selected executable: benchmarks/goal10-static-20261023/selected/g10static. Fallback: tools/build_goal10_index.py. General pack profile234 remains the separate model default.
+Selected executable: benchmarks/goal10-static-20261023/selected/g10static. Fallback: tools/build/build_goal10_index.py. General pack profile234 remains the separate model default.

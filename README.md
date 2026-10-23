@@ -46,6 +46,8 @@ ctest --test-dir build --output-on-failure
 
 The repository contains source code, tests, examples, benchmark tools, and selected reports. Raw game corpora and generated build outputs are not included.
 
+See the [tool directory guide](tools/README.md) for development scripts organized by purpose.
+
 ### Project contents
 
 - **Versioned codecs and compatibility tests** — current and legacy formats with regression coverage.
@@ -110,6 +112,8 @@ ctest --test-dir build --output-on-failure
 ```
 
 저장소에는 소스 코드, 테스트, 예제, 벤치마크 도구와 일부 연구 보고서가 들어 있습니다. 원본 기보 데이터셋과 생성된 빌드 결과물은 포함되어 있지 않습니다.
+
+개발 도구는 [도구 폴더 안내](tools/README.md)에 정리된 용도별 경로에서 실행합니다.
 
 ### 저장소 구성
 

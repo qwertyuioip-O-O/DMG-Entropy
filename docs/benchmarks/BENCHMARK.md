@@ -7,7 +7,7 @@ One Python entry point compares the original fixed scratch+LTO anchor and the se
 From the project directory:
 
 ```sh
-python3 tools/benchmark_r19.py --out benchmark-full --cpu 1
+python3 tools/benchmarking/benchmark_r19.py --out benchmark-full --cpu 1
 ```
 
 Default: all three held-out bundles, mode 3, four alternating ABBA/BAAB blocks per dataset, two consecutive native CLI calls averaged per observation. This is **96 native speed calls**. Each native invocation performs warmup, byte determinism and roundtrip checks plus its original three timed encode/decode repetitions. Do not run builds or other benchmarks alongside it.
@@ -17,7 +17,7 @@ Default: all three held-out bundles, mode 3, four alternating ABBA/BAAB blocks p
 ## Quick smoke check
 
 ```sh
-python3 tools/benchmark_r19.py --out benchmark-smoke --rounds 1 --batch 1 --cpu 1
+python3 tools/benchmarking/benchmark_r19.py --out benchmark-smoke --rounds 1 --batch 1 --cpu 1
 ```
 
 This is 12 native calls. Use it to verify the runner and data, not to establish a performance gain. The included `benchmarks-r19-runner-smoke-20261023` is this check; the earlier accepted study remains in `benchmarks/goal10-static-20261023/confirmation-batched-cpu1`.
@@ -25,10 +25,10 @@ This is 12 native calls. Use it to verify the runner and data, not to establish 
 ## Rebuild or supply your own inputs
 
 ```sh
-python3 tools/build_r19_scratch.py --out build-anchor
-python3 tools/build_r19_current.py --out build-current
-python3 tools/benchmark_r19.py --baseline build-anchor/r19_scratch --candidate build-current/g10static --out benchmark-rebuilt
-python3 tools/benchmark_r19.py --dataset my-games=/absolute/path/games.uci-bundle --out benchmark-custom
+python3 tools/build/build_r19_scratch.py --out build-anchor
+python3 tools/build/build_r19_current.py --out build-current
+python3 tools/benchmarking/benchmark_r19.py --baseline build-anchor/r19_scratch --candidate build-current/g10static --out benchmark-rebuilt
+python3 tools/benchmarking/benchmark_r19.py --dataset my-games=/absolute/path/games.uci-bundle --out benchmark-custom
 ```
 
 Repeat `--dataset LABEL=PATH` to compare multiple datasets. It replaces the default dataset list. `--mode` accepts 0 through 4; tables use builtin. These candidates preserve the same model and must produce identical framed archives. A mismatch aborts before timing. On another CPU/compiler, rebuilt binary hashes can differ from the frozen anchor; the report records that fact and does not treat them as the exact original goal anchor.

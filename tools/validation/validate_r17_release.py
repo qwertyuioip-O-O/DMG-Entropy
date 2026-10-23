@@ -20,7 +20,7 @@ for name,rel in [('new','data-r17/heldout.uci-bundle'),('wcc','benchmarks-r4/wcc
  subprocess.run([str(exe),'unpack',str(out/(name+'-frozen.d17')),'builtin',str(out/(name+'-decoded.uci-bundle'))],check=True)
  assert [' '.join(x.split()) for x in (r/rel).read_text().splitlines()]==[' '.join(x.split()) for x in (out/(name+'-decoded.uci-bundle')).read_text().splitlines()]
 print('pack/unpack and builtin identity PASS',flush=True)
-meta={'rounds':6,'repetitions':3,'warm_roundtrip':True,'balanced_order':True,'platform':platform.platform(),'source_sha256':hashlib.sha256((r/'tools/r17_prior.cpp').read_bytes()).hexdigest(),'no_parallel_build_or_tests':True,'baseline':'same-executable mode0, payload-identical to R16 strong','candidate':'frozen mode2, selected before new data metrics'}
+meta={'rounds':6,'repetitions':3,'warm_roundtrip':True,'balanced_order':True,'platform':platform.platform(),'source_sha256':hashlib.sha256((r/'tools/native/r17_prior.cpp').read_bytes()).hexdigest(),'no_parallel_build_or_tests':True,'baseline':'same-executable mode0, payload-identical to R16 strong','candidate':'frozen mode2, selected before new data metrics'}
 (out/'timing.json').write_text(json.dumps(meta,indent=2));rows=[]
 # No work except these sequential warm/encode/decode comparisons beyond here.
 with (out/'speed.csv').open('w') as f:

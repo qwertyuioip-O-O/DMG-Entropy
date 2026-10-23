@@ -1,3 +1,3 @@
-# Dataset preparation
+# Data Preparation
 
-Implementation scripts moved here. The original top-level paths remain compatible entry points for documentation and automation.
+Scripts live here; run them from the repository root. See [tool directory guide](../README.md).

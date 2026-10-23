@@ -121,7 +121,7 @@ structure95, R14 features7을 고정하고 일반 중반 rate와 잡기 전용 r
 실험 API의 기본 설정과 명시적253은 고정된7/1/4다. 일반 pack 기본234는 그대로다.
 
 ```bash
-python3 tools/build_r15.py --out build-r15
+python3 tools/build/build_r15.py --out build-r15
 build-r15/dmg_mid pack r15-pawn-split sample.dmt game1.uci game2.uci
 build-r15/dmg_mid unpack sample.dmt restored
 ```
@@ -139,8 +139,8 @@ mode0/252 payload 일치, CRC, 유효 CRC를 가진 잘못된 설정·version,
 모든 길이의 잘린 입력 거부를 포함한다.
 
 ```bash
-python3 tools/reproduce_r15.py --out build-r15 --full --timing
-python3 tools/analyze_r15_losses.py
+python3 tools/reproduction/reproduce_r15.py --out build-r15 --full --timing
+python3 tools/analysis/analyze_r15_losses.py
 ```
 
 전체 재현은 g++ C++20과 Python 표준 라이브러리를 사용한다.

@@ -11,7 +11,7 @@ This is a **selector-level promotion**, not a change to the mathematical probabi
 ## Changes
 
 1. `include/dmg_mid.hpp`: named `MID_DEFAULT_PROFILE = R10ComboTact4Full` (234); zero-argument profile selection available from the C++ `mid_encode(games)` API.
-2. `tools/mid_cli.cpp`: `dmg_mid main` shows current main; `dmg_mid pack output.dmt *.uci` now defaults to 234; `pack best` and `pack default` alias the main; explicitly specified profile names continue to work, including 119, 182, and 231. Unknown profile strings fail rather than silently selecting 234.
+2. `tools/native/mid_cli.cpp`: `dmg_mid main` shows current main; `dmg_mid pack output.dmt *.uci` now defaults to 234; `pack best` and `pack default` alias the main; explicitly specified profile names continue to work, including 119, 182, and 231. Unknown profile strings fail rather than silently selecting 234.
 3. `tests/default_profile_tests.cpp`: assert 234, implicit-vs-explicit byte equivalence, archive profile marker, old profile decoding and CRC rejection.
 4. `CMakeLists.txt`: register fast `dmt_default_profile` test.
 5. Existing `DMT1`–`DMT10` encoding code and format markers are unchanged. The decoder still trusts *encoded* version/profile, not the current default.

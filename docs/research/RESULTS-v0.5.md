@@ -88,8 +88,8 @@ Priority for v0.6: compute the `gives_check` signal using lightweight incrementa
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build -j
 ctest --test-dir build --output-on-failure
-python3 tools/validate_heldout.py --binary build/rmc --out results-v0.5
-python3 tools/analyze_v05.py
+python3 tools/validation/validate_heldout.py --binary build/rmc --out results-v0.5
+python3 tools/analysis/analyze_v05.py
 ./build/rmc_human_bench examples/heldout/*.uci
 ./build/rmc bench 50 80 24145
 ```

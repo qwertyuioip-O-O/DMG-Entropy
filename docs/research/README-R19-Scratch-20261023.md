@@ -13,7 +13,7 @@ Four temporary `std::array<uint64_t,256>` scratch buffers no longer receive unco
 
 The unchanged `v6_quantize` reads only `[0,n)` in its mass sum and output loop. These buffers are passed by const reference, not copied wholesale or serialized. No accumulation depends on an initial zero. Unused slots are not evaluated. All persistent model state, feature arrays and intermediate-state flags retain their existing initialization. No whole-structure or arbitrary-array initialization is removed.
 
-`tools/generate_r19_scratch.py` generates isolated variants from the retained direct-output sources, matching each exact function and declaration. Source diffs and checksums document the limited change. Compiler optimization may already remove some redundant stores; a measured gain would not establish that every source-level zeroing change independently contributed.
+`tools/generation/generate_r19_scratch.py` generates isolated variants from the retained direct-output sources, matching each exact function and declaration. Source diffs and checksums document the limited change. Compiler optimization may already remove some redundant stores; a measured gain would not establish that every source-level zeroing change independently contributed.
 
 ## Validation, timing and selection
 
@@ -26,9 +26,9 @@ The protocol and rule are recorded before timing. Builds, training, tests and ot
 ## Reproduce
 
 ```sh
-python3 tools/build_r19_lto.py --out build-r19-lto
-python3 tools/build_r19_scratch.py --out build-r19-scratch
-python3 tools/benchmark_r19_scratch.py --baseline build-r19-lto/r19_lto --candidate build-r19-scratch/r19_scratch --out fresh-scratch-study
+python3 tools/build/build_r19_lto.py --out build-r19-lto
+python3 tools/build/build_r19_scratch.py --out build-r19-scratch
+python3 tools/benchmarking/benchmark_r19_scratch.py --baseline build-r19-lto/r19_lto --candidate build-r19-scratch/r19_scratch --out fresh-scratch-study
 ```
 
 Both builds use `-O3 -flto=1` and the same model/source baseline. General pack profile234 remains a separate default. The current research build is identified in `CURRENT-SPEED-BASELINE.md`.
