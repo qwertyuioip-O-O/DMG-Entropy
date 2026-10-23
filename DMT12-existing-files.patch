@@ -1,0 +1,501 @@
+--- a/src/entropy.cpp
++++ b/src/entropy.cpp
+@@ -869,7 +869,7 @@
+     std::unordered_map<uint32_t,uint16_t> squares;
+     struct Opportunity {uint32_t expected=0,actual=0;};
+     std::unordered_map<uint32_t,Opportunity> geom_op;
+-    std::unordered_map<uint32_t,Opportunity> square_op;
++    mutable std::unordered_map<uint32_t,Opportunity> square_op;
+     static unsigned phase(const Position& p,unsigned ply) {
+         if(ply<24 && material_phase(p)>=18)return 0;
+         if(material_phase(p)<=8)return 2;
+@@ -1327,12 +1327,22 @@
+     std::array<uint32_t,V8_K> alpha{13108,13107,13107,13107,13107};
+ };
+ struct V8Step {
++#ifdef DMT_CACHE_OPPORTUNITY
++    std::array<V7Patterns::Opportunity*,256> square_entries{};
++#endif
+     CandidateList moves;
+     std::array<uint32_t,256> flags{};
+     std::array<uint32_t,256> square_keys{};
+     std::array<V6Weights,V8_K> experts{};
+     V6Weights coded;
+ };
++template<class Step> auto* v8_entry_cache(Step& s){
++#ifdef DMT_CACHE_OPPORTUNITY
++    return &s.square_entries;
++#else
++    (void)s;return static_cast<std::array<V7Patterns::Opportunity*,256>*>(nullptr);
++#endif
++}
+ uint64_t v09_pinned(const Position& p) {
+     int king=p.king_square(p.side);if(king<0)return ~uint64_t(0);
+     constexpr int d[8][2]={{1,0},{-1,0},{0,1},{0,-1},{1,1},{1,-1},{-1,1},{-1,-1}};
+@@ -1371,7 +1381,7 @@
+ #endif
+     return ok;
+ }
+-V6Weights v09_cached_opportunity(const CandidateList& c,const Position& p,unsigned ply,const V7Patterns& db,std::array<uint32_t,256>& keys) {
++V6Weights v09_cached_opportunity(const CandidateList& c,const Position& p,unsigned ply,const V7Patterns& db,std::array<uint32_t,256>& keys,std::array<V7Patterns::Opportunity*,256>* entries=nullptr) {
+     const unsigned phase=V7Patterns::phase(p,ply);std::array<uint64_t,256> raw{};
+     constexpr uint64_t prior=4u*4096u;
+     for(unsigned i=0;i<c.size;++i){
+@@ -1379,20 +1389,68 @@
+         unsigned from=p.side?(m.from^56u):m.from,to=p.side?(m.to^56u):m.to;
+         unsigned cap=V7Patterns::capture(p,m,int(kind));
+         uint32_t key=(((((phase*8u+kind)*64u+from)*64u+to)*2u+cap)*8u+m.promotion);keys[i]=key;
+-        auto it=db.square_op.find(key);uint64_t hits=it==db.square_op.end()?0:it->second.actual, exp=it==db.square_op.end()?0:it->second.expected;
++        const V7Patterns::Opportunity* record=nullptr;
++        if(entries){
++            // unordered_map references remain valid across rehash. These zero
++            // entries would be inserted by observe for every candidate anyway.
++            auto* entry=&db.square_op[key];(*entries)[i]=entry;record=entry;
++        }else {auto it=db.square_op.find(key);if(it!=db.square_op.end())record=&it->second;}
++        uint64_t hits=record?record->actual:0,exp=record?record->expected:0;
+         uint64_t ratio=std::clamp((hits+prior)*1024u/(exp+prior),uint64_t(341),uint64_t(3072));
+         raw[i]=std::max<uint64_t>(1,uint64_t(c.a[i].w)*ratio);
+     }
+     return v6_quantize(raw,c.size);
+ }
+-void v09_cached_observe(V7Patterns& db,const CandidateList& c,const std::array<uint32_t,256>& keys,unsigned ix){
+-    for(unsigned i=0;i<c.size;++i){unsigned e=unsigned((uint64_t(c.a[i].w)*4096u+c.total/2)/c.total);V7Patterns::saturating_add(db.square_op[keys[i]].expected,e);}
+-    V7Patterns::saturating_add(db.square_op[keys[ix]].actual,4096u);
++void v09_cached_observe(V7Patterns& db,const CandidateList& c,const std::array<uint32_t,256>& keys,unsigned ix,
++                        const std::array<V7Patterns::Opportunity*,256>* entries=nullptr){
++    for(unsigned i=0;i<c.size;++i){unsigned e=unsigned((uint64_t(c.a[i].w)*4096u+c.total/2)/c.total);
++        auto& record=entries?*(*entries)[i]:db.square_op[keys[i]];V7Patterns::saturating_add(record.expected,e);}
++    auto& chosen=entries?*(*entries)[ix]:db.square_op[keys[ix]];
++    V7Patterns::saturating_add(chosen.actual,4096u);
++}
++// Compute check delivery once for the relational-joint path. The reference
++// candidate builder used it once for weights and again for relation flags.
++void v8_joint_candidates(const Position& p,const Move* prev,unsigned ply,V8Step& s){
++    Model dummy;auto pseudo=candidates(p,Mode::EntropyUniform,prev,ply,dummy);
++    const bool in_check=p.square_attacked(p.king_square(p.side),p.side^1);
++    if(in_check)remove_illegal_during_check(pseudo,p);
++    const uint64_t pinned=in_check?0:v09_pinned(p);
++    AttackCache pre_enemy(p);const OwnAttackReuse reuse(p);
++    unsigned raw_total=0;
++    for(unsigned i=0;i<pseudo.size;++i){
++        auto item=pseudo.a[i];Position next=p;
++        const bool legal=v09_known_pseudo(p,item.m,next,pinned,in_check);
++        uint32_t flags=legal?v8_relations(p,next,item.m,prev,pre_enemy,ply,&reuse):0;
++        const bool check=legal?bool(flags&(1u<<8)):direct_check_bonus(p,item.m)!=0;
++        unsigned w=positional_weight(p,item.m,prev,ply);
++        w=unsigned(std::max(1,int(w)+tactical_bonus(p,item.m,prev,pre_enemy)));
++        w=unsigned(std::max(1,int(w)+(check?12:0)));
++        raw_total+=w;
++        if(legal){item.category=group(p,item.m,prev);item.w=uint16_t(w);
++            s.flags[s.moves.size]=flags;s.moves.a[s.moves.size++]=item;}
++    }
++    if(!s.moves.size)fail("DMG8 move requested from terminal position");
++    const unsigned factor=raw_total>=32768?(raw_total+16383)/16384:1;
++    for(unsigned i=0;i<s.moves.size;++i){s.moves.a[i].w=uint16_t(std::max(1u,unsigned(s.moves.a[i].w)/factor));s.moves.total+=s.moves.a[i].w;}
++#ifdef DMT_VERIFY_JOINT_CANDIDATES
++    auto original=candidates(p,Mode::EntropyCheckSignalLight,prev,ply,dummy);unsigned count=0,total=0;
++    for(unsigned i=0;i<original.size;++i){Position next=p;
++        if(!v09_known_pseudo(p,original.a[i].m,next,pinned,in_check))continue;
++        const auto& got=s.moves.a[count];const auto& ref=original.a[i];
++        if(got.m!=ref.m||got.w!=ref.w||got.category!=ref.category||s.flags[count]!=v8_relations(p,next,ref.m,prev,pre_enemy,ply))fail("joint candidate oracle mismatch");
++        total+=ref.w;++count;
++    }
++    if(count!=s.moves.size||total!=s.moves.total)fail("joint candidate total mismatch");
++#endif
+ }
+ V8Step v8_step(const Position& p,const Move* prev,unsigned ply,
+                V8Model mode,const V8Context& ctx,
+                const std::array<int16_t,V8_F>* phase_delta=nullptr){
+     V8Step s;
++#ifndef DMT_REFERENCE_JOINT_CANDIDATES
++    if(mode==V8Model::RelationalJoint)v8_joint_candidates(p,prev,ply,s);
++    else {
++#endif
+     Model dummy;
+     const bool in_check=p.square_attacked(p.king_square(p.side),p.side^1);
+     const uint64_t pinned=in_check?0:v09_pinned(p);
+@@ -1406,7 +1464,7 @@
+             s.moves.total+=pseudo.a[i].w;
+         }
+         if(!s.moves.size)fail("DMG8 terminal position");
+-        s.experts[0]=v09_cached_opportunity(s.moves,p,ply,ctx.patterns,s.square_keys);
++        s.experts[0]=v09_cached_opportunity(s.moves,p,ply,ctx.patterns,s.square_keys,v8_entry_cache(s));
+         s.coded=s.experts[0];
+         return s;
+     }
+@@ -1429,8 +1487,11 @@
+     }
+     if(!s.moves.size)fail("DMG8 move requested from a terminal position");
+     s.moves.total=running;
++#ifndef DMT_REFERENCE_JOINT_CANDIDATES
++    }
++#endif
+     // A/B reference: same v0.7 opportunity model on a fully legal alphabet.
+-    s.experts[0]=v09_cached_opportunity(s.moves,p,ply,ctx.patterns,s.square_keys);
++    s.experts[0]=v09_cached_opportunity(s.moves,p,ply,ctx.patterns,s.square_keys,v8_entry_cache(s));
+     std::array<uint64_t,256> ae{},joint{};
+     constexpr uint64_t prior=4096u*12u;
+     const bool need_ae = mode != V8Model::RelationalJoint;
+@@ -1473,7 +1534,7 @@
+ void v8_observe(V8Context& ctx,const Position& p,const V8Step& s,
+                 unsigned ix,unsigned ply,V8Model mode){
+     if(mode==V8Model::LegalOpportunity){
+-        v09_cached_observe(ctx.patterns,s.moves,s.square_keys,ix);
++        v09_cached_observe(ctx.patterns,s.moves,s.square_keys,ix,v8_entry_cache(s));
+         return;
+     }
+     ctx.relation.observe(s.flags,s.experts[2],s.experts[0],s.moves.size,ix);
+@@ -1491,7 +1552,7 @@
+             ctx.alpha[k]=(ctx.alpha[k]*63u+13107u)/64u;
+         }
+     }
+-    v09_cached_observe(ctx.patterns,s.moves,s.square_keys,ix);
++    v09_cached_observe(ctx.patterns,s.moves,s.square_keys,ix,v8_entry_cache(s));
+     if(mode==V8Model::ExpertMixture || mode==V8Model::ExpertMixtureReset) ctx.exact.observe(V6Learn::key(p),s.moves.a[ix].m);
+ }
+ } // anonymous
+@@ -2612,7 +2673,18 @@
+     }
+     return out;
+ }
++struct R12Model {
++    std::array<int16_t,168> theta{};
++    std::array<int32_t,168> residual{};
++    uint32_t steps=0;
++};
++constexpr Dmt12Config R12_FIXED{31,4,100,7,0,10,32};
++void r12_validate(const Dmt12Config& c){
++    if(!c.families||c.families>31||!c.rate||c.rate>16||c.alpha>100||!c.phase_mask||c.phase_mask>7||c.base>1||c.decay_log2<4||c.decay_log2>12||!c.cap||c.cap>64)fail("invalid DMT12 config");
++}
+ struct MidContext {
++    Dmt12Config config{};
++    std::array<R12Model,3> r12{};
+     V8Context baseline; MidResidual mid,opening,plan;
+     std::array<MidResidual,3> single{},compact{};
+     R3OpenStore open_store;
+@@ -2637,6 +2709,7 @@
+     uint32_t r10_seen=0;
+ };
+ struct MidStep {
++    std::array<std::array<uint8_t,5>,256> r12_features{};
+     V8Step base; V6Weights coded;
+     std::array<uint16_t,256> additional{},r3_plan{},r4_rank{},positional{},r6_features{};
+     std::array<uint8_t,256> pos_quiet{};
+@@ -2654,14 +2727,29 @@
+     V6Weights r10_before{},r10_expert{};
+     unsigned context=0;
+ };
++struct FeatureScore10 {
++    std::array<int16_t,32> low{},high{};
++    explicit FeatureScore10(const std::array<int16_t,10>& theta){
++        for(unsigned i=1;i<32;++i){const unsigned b=std::countr_zero(i),prior=i&(i-1);
++            low[i]=int16_t(low[prior]+theta[b]);high[i]=int16_t(high[prior]+theta[b+5]);}
++    }
++    int operator()(unsigned mask)const{return low[mask&31]+high[(mask>>5)&31];}
++};
+ V6Weights mid_residual_cdf(const V6Weights& original,unsigned n,
+                              const std::array<uint16_t,256>& extra,const MidResidual& model){
+     bool active=false;for(auto weight:model.theta)if(weight){active=true;break;}
+     if(!active)return original;
++#ifdef DMT_FEATURE_LUT
++    const FeatureScore10 score_table(model.theta);
++#endif
+     std::array<uint64_t,256> raw{};
+     for(unsigned i=0;i<n;++i){
++#ifdef DMT_FEATURE_LUT
++        int score=score_table(extra[i]);
++#else
+         int score=0;unsigned features=extra[i];
+         while(features){unsigned k=std::countr_zero(features);features&=features-1;score+=model.theta[k];}
++#endif
+         score=std::clamp(score,-128,128);
+         raw[i]=uint64_t(original.weights[i])*v8_exp2_lut[score+128];
+     }
+@@ -3485,11 +3573,18 @@
+     for(unsigned k=0;k<3;++k){
+         if(!prior[k+1])continue;
+         const auto& theta=ctx.r8_specialists[context][k].theta;
++#ifdef DMT_FEATURE_LUT
++        const FeatureScore10 score_table(theta);
++#endif
+         uint64_t sum=0;
+         for(unsigned j=0;j<n;++j){
++#ifdef DMT_FEATURE_LUT
++            int score=score_table(step.r8_signal[k][j]);
++#else
+             int score=0;
+             uint16_t mask=step.r8_signal[k][j];
+             while(mask){unsigned bit=std::countr_zero(mask);mask&=mask-1;score+=theta[bit];}
++#endif
+             if(p==MidProfile::R9Sharp || p==MidProfile::R9TPSharp || p==MidProfile::R9MixSharp)score=(score*3)/2;
+             if(p==MidProfile::R9Damp || p==MidProfile::R9TPDamp || p==MidProfile::R9MixDamp)score=(score*3)/4;
+             score=std::clamp(score,-128,128);
+@@ -3515,7 +3610,7 @@
+     }
+     return v6_quantize(raw,n);
+ }
+-MidStep mid_step(const Position& p,const Move* previous,const Move* own_previous,
++MidStep mid_step_legacy(const Position& p,const Move* previous,const Move* own_previous,
+                  unsigned ply,unsigned stage,MidProfile profile,const MidContext& ctx){
+     const MidProfile r11profile=profile;
+     if(unsigned(profile)>=245)profile=MidProfile::R10ComboTact4Full;
+@@ -3768,7 +3863,7 @@
+     }
+     return result;
+ }
+-void mid_observe(MidContext&ctx,const Position&p,const MidStep&s,
++void mid_observe_legacy(MidContext&ctx,const Position&p,const MidStep&s,
+                  unsigned index,unsigned ply,unsigned stage,MidProfile profile){
+     const MidProfile r11profile=profile;
+     if(unsigned(profile)>=245)profile=MidProfile::R10ComboTact4Full;
+@@ -3925,6 +4020,51 @@
+         else ctx.r6_residual.observe(s.r6_features,s.coded,s.base.moves.size,index,false,rate);
+     }
+     v8_observe(ctx.baseline,p,s.base,index,ply,V8Model::RelationalJoint);
++}
++// Candidate interaction model: five small categorical feature families.
++// Context is observable before the chosen move. One shared residual distribution.
++MidStep mid_step(const Position& p,const Move* previous,const Move* own_previous,
++                 unsigned ply,unsigned stage,MidProfile profile,const MidContext& ctx){
++    if(profile!=MidProfile::R12Configurable&&profile!=MidProfile::R12JointAll)return mid_step_legacy(p,previous,own_previous,ply,stage,profile,ctx);
++    auto result=mid_step_legacy(p,previous,own_previous,ply,stage,ctx.config.base?MidProfile::R11Joint40Rate2:MidProfile::R10ComboTact4Full,ctx);
++    if(!(ctx.config.phase_mask&(1u<<stage)))return result;
++    const unsigned n=result.base.moves.size;const auto& model=ctx.r12[stage];
++    std::array<uint64_t,256> raw{};
++    for(unsigned i=0;i<n;++i){
++        auto m=result.base.moves.a[i].m;const unsigned piece=unsigned(abs_piece(p.board[m.from])-1);
++        const unsigned rank=p.side?7-(m.to>>3):(m.to>>3);
++        const int x=m.to&7,y=m.to>>3;
++        const unsigned center=unsigned(std::min(3,std::min(std::abs(x-3),std::abs(x-4))+std::min(std::abs(y-3),std::abs(y-4))));
++        const unsigned distance=unsigned(std::max(std::abs(x-int(m.from&7)),std::abs(y-int(m.from>>3))));
++        const auto f=result.base.flags[i];
++        auto& keys=result.r12_features[i];
++        keys={uint8_t(piece*8+rank),uint8_t(48+piece*4+center),
++              uint8_t(72+piece*4+unsigned(bool(f&(1u<<2)))+2*unsigned(bool(f&(1u<<3)))),
++              uint8_t(96+piece*8+distance),
++              uint8_t(144+piece*4+unsigned(bool(f&(1u<<4)))+2*unsigned(bool(f&(1u<<8))))};
++        int score=0;for(unsigned k=0;k<5;++k){if(ctx.config.families&(1u<<k))score+=model.theta[keys[k]];else keys[k]=255;}
++        score=std::clamp(score,-128,128);raw[i]=uint64_t(result.coded.weights[i])*v8_exp2_lut[score+128];
++    }
++    auto calibrated=v6_quantize(raw,n);
++    result.coded=r7_mix(result.coded,calibrated,n,ctx.config.alpha);
++    return result;
++}
++void mid_observe(MidContext&ctx,const Position&p,const MidStep&s,unsigned index,unsigned ply,unsigned stage,MidProfile profile){
++    if(profile!=MidProfile::R12Configurable&&profile!=MidProfile::R12JointAll){mid_observe_legacy(ctx,p,s,index,ply,stage,profile);return;}
++    if(ctx.config.phase_mask&(1u<<stage)){
++        auto& model=ctx.r12[stage];std::array<uint32_t,168> sums{};
++        for(unsigned i=0;i<s.base.moves.size;++i)for(auto key:s.r12_features[i])if(key!=255)sums[key]+=s.coded.weights[i];
++        const ExactDivisor divide(s.coded.total);
++        std::array<bool,168> actual{};for(auto key:s.r12_features[index])if(key!=255)actual[key]=true;
++        for(unsigned k=0;k<168;++k){
++            const int32_t expected=int32_t(divide(uint64_t(sums[k])*4096+s.coded.total/2));
++            model.residual[k]+=ctx.config.rate*((actual[k]?4096:0)-expected);
++            int delta=model.residual[k]/4096;model.residual[k]-=delta*4096;
++            model.theta[k]=int16_t(std::clamp(int(model.theta[k])+delta,-int(ctx.config.cap),int(ctx.config.cap)));
++        }
++        if((++model.steps&((1u<<ctx.config.decay_log2)-1))==0)for(auto& t:model.theta){if(t>0)--t;else if(t<0)++t;}
++    }
++    mid_observe_legacy(ctx,p,s,index,ply,stage,ctx.config.base?MidProfile::R11Joint40Rate2:MidProfile::R10ComboTact4Full);
+ }
+ void mid_record(MidDiagnostics* diag,unsigned stage,const MidStep&s,unsigned ix){
+     if(!diag)return;
+@@ -4011,15 +4151,18 @@
+ "r10-all-tact2","r10-all-geom2",
+ "r10-combo-tact2-mix","r10-combo-tact4-mix","r10-combo-tact2-full","r10-combo-tact4-full",
+ "r10-combo-tact2-gate","r10-combo-tact4-gate","r10-combo-tact1-mix75","r10-combo-tact2-mix25",
+-"r10-combo-tact2-mix75","r10-combo-geom2-mix","r10-combo-hybrid2-mix","r10-combo-tact3-full","r11-single-rate2","r11-single-rate4","r11-joint30-rate2","r11-joint30-rate4","r11-joint40-rate2","r11-joint40-rate4"};
++"r10-combo-tact2-mix75","r10-combo-geom2-mix","r10-combo-hybrid2-mix","r10-combo-tact3-full","r11-single-rate2","r11-single-rate4","r11-joint30-rate2","r11-joint30-rate4","r11-joint40-rate2","r11-joint40-rate4","r12-configurable","r12-joint-all"};
+ } // anonymous
+ const char* mid_name(MidProfile p){unsigned i=unsigned(p);return i<MID_PROFILE_COUNT?mid_names[i]:"invalid";}
+-V6Archive mid_encode(const std::vector<std::vector<Move>>& games,MidProfile profile,MidDiagnostics* diag,std::vector<MidTrace>* trace){
++static V6Archive mid_encode_impl(const std::vector<std::vector<Move>>& games,MidProfile profile,MidDiagnostics* diag,std::vector<MidTrace>* trace,const Dmt12Config* configuration){
+     if(unsigned(profile)>=MID_PROFILE_COUNT)fail("bad DMT profile");
+     if(games.size()>100000)fail("too many DMT1 games");
+     if(diag)*diag={};
+     if(trace)trace->clear();
+     ArithmeticEncoder coder;MidContext ctx;
++    if(configuration)ctx.config=*configuration;
++    if(profile==MidProfile::R12JointAll)ctx.config=R12_FIXED;
++    if(profile==MidProfile::R12Configurable||profile==MidProfile::R12JointAll)r12_validate(ctx.config);
+     uint64_t total=0;
+     for(unsigned game_index=0;game_index<games.size();++game_index){
+         const auto& game=games[game_index];
+@@ -4049,7 +4192,9 @@
+         }
+     }
+     auto payload=total?coder.finish():EntropyPayload{};
+-    std::vector<uint8_t> bytes={'D','M','T',uint8_t(unsigned(profile)>=243?'B':mid_r10_profile(profile)?'A':(mid_r9_profile(profile)?'9':(mid_r8_profile(profile)?'8':(mid_r7_profile(profile)?'7':(mid_r6_profile(profile)?'6':(mid_r5_profile(profile)?'5':(mid_r4_profile(profile)?'4':(mid_r3_profile(profile)?'3':(mid_new_profile(profile)?'2':'1'))))))))),1,uint8_t(profile)};
++    std::vector<uint8_t> bytes={'D','M','T',uint8_t(unsigned(profile)==250?'D':unsigned(profile)==249?'C':unsigned(profile)>=243?'B':mid_r10_profile(profile)?'A':(mid_r9_profile(profile)?'9':(mid_r8_profile(profile)?'8':(mid_r7_profile(profile)?'7':(mid_r6_profile(profile)?'6':(mid_r5_profile(profile)?'5':(mid_r4_profile(profile)?'4':(mid_r3_profile(profile)?'3':(mid_new_profile(profile)?'2':'1'))))))))),1,uint8_t(profile)};
++    if(profile==MidProfile::R12Configurable){const auto& c=ctx.config;
++        for(auto value:{c.families,c.rate,c.alpha,c.phase_mask,c.base,c.decay_log2,c.cap})bytes.push_back(value);}
+     v6_varint(bytes,uint32_t(games.size()));
+     for(const auto&g:games)v6_varint(bytes,uint32_t(g.size()));
+     v6_varint(bytes,payload.bit_count);
+@@ -4059,6 +4204,8 @@
+     for(unsigned j=0;j<4;++j)bytes.push_back(uint8_t(crc>>(8*j)));
+     return {std::move(bytes),payload.bit_count,framing};
+ }
++V6Archive mid_encode(const std::vector<std::vector<Move>>& games,MidProfile profile,MidDiagnostics* diag,std::vector<MidTrace>* trace){return mid_encode_impl(games,profile,diag,trace,nullptr);}
++V6Archive mid_encode_experimental(const std::vector<std::vector<Move>>& games,const Dmt12Config& config,MidDiagnostics* diag){return mid_encode_impl(games,MidProfile::R12Configurable,diag,nullptr,&config);}
+ std::vector<std::vector<Move>> mid_decode(const std::vector<uint8_t>&bytes){
+     if(bytes.size()<10||bytes[0]!='D'||bytes[1]!='M'||bytes[2]!='T'||bytes[4]!=1)
+         fail("bad DMT header");
+@@ -4074,19 +4221,26 @@
+         (version=='8' && id>=98 && id<125) ||
+         (version=='9' && id>=125 && id<189) ||
+         (version=='A' && id>=189 && id<243) ||
+-        (version=='B' && id>=243 && id<MID_PROFILE_COUNT);
++        (version=='B' && id>=243 && id<249) || (version=='C' && id==249) || (version=='D' && id==250);
+     if(!valid)fail("bad DMT header");
+     uint32_t crc=v6_crc(bytes.data(),bytes.size()-4),given=0;
+     for(unsigned k=0;k<4;++k)given|=uint32_t(bytes[bytes.size()-4+k])<<(8*k);
+     if(crc!=given)fail("DMT1 CRC mismatch");
+     MidProfile profile=MidProfile(bytes[5]);
+-    size_t off=6;uint32_t count=v6_unvar(bytes,off);
++    size_t off=6;Dmt12Config configuration;
++    if(profile==MidProfile::R12Configurable){
++        if(bytes.size()<17)fail("short DMT12 header");
++        configuration={bytes[6],bytes[7],bytes[8],bytes[9],bytes[10],bytes[11],bytes[12]};
++        r12_validate(configuration);off=13;
++    }
++    if(profile==MidProfile::R12JointAll)configuration=R12_FIXED;
++    uint32_t count=v6_unvar(bytes,off);
+     if(count>100000)fail("bad DMT1 archive size");
+     std::vector<uint32_t> lens;uint64_t total=0;
+     for(unsigned i=0;i<count;++i){auto x=v6_unvar(bytes,off);if(x>1000000||(total+=x)>300000000ULL)fail("bad DMT1 length");lens.push_back(x);}
+     uint32_t bits=v6_unvar(bytes,off);
+     if((uint64_t(bits)+7)/8!=bytes.size()-off-4||(total&&!bits))fail("bad DMT1 payload size");
+-    ArithmeticDecoder coder(bytes.data()+off,bits);MidContext ctx;
++    ArithmeticDecoder coder(bytes.data()+off,bits);MidContext ctx;ctx.config=configuration;
+     std::vector<std::vector<Move>> result;result.reserve(count);
+     for(auto len:lens){
+         Position p=Position::standard();Move previous{},own[2]{};bool has_prev=false,own_valid[2]={false,false};
+--- a/include/dmg_mid.hpp
++++ b/include/dmg_mid.hpp
+@@ -80,9 +80,9 @@
+     R10ComboTact2Gate=235,R10ComboTact4Gate=236,
+     R10ComboTact1Mix75=237,R10ComboTact2Mix25=238,
+     R10ComboTact2Mix75=239,R10ComboGeom2Mix=240,
+-    R10ComboHybrid2Mix=241,R10ComboTact3Full=242, R11SingleRate2=243,R11SingleRate4=244,R11Joint30Rate2=245,R11Joint30Rate4=246,R11Joint40Rate2=247,R11Joint40Rate4=248
++    R10ComboHybrid2Mix=241,R10ComboTact3Full=242, R11SingleRate2=243,R11SingleRate4=244,R11Joint30Rate2=245,R11Joint30Rate4=246,R11Joint40Rate2=247,R11Joint40Rate4=248,R12Configurable=249,R12JointAll=250
+ };
+-constexpr unsigned MID_PROFILE_COUNT=249;
++constexpr unsigned MID_PROFILE_COUNT=251;
+ // Preferred research default as of 2026-10-22. Explicit archived profile IDs
+ // remain immutable. Decoder always reads the profile embedded in the header.
+ constexpr MidProfile MID_DEFAULT_PROFILE=MidProfile::R10ComboTact4Full;
+@@ -100,6 +100,12 @@
+     double logloss=0;
+     Move selected{};
+ };
++// DMT12/C header serializes every model parameter; no external state required.
++struct Dmt12Config {
++    uint8_t families=31,rate=2,alpha=50,phase_mask=2,base=0,decay_log2=7,cap=24;
++    bool operator==(const Dmt12Config&) const = default;
++};
++V6Archive mid_encode_experimental(const std::vector<std::vector<Move>>&,const Dmt12Config&,MidDiagnostics* =nullptr);
+ const char* mid_name(MidProfile);
+ V6Archive mid_encode(const std::vector<std::vector<Move>>&,MidProfile = MID_DEFAULT_PROFILE,MidDiagnostics* =nullptr, std::vector<MidTrace>* =nullptr);
+ std::vector<std::vector<Move>> mid_decode(const std::vector<uint8_t>&);
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -162,3 +162,25 @@
+ target_include_directories(dmt11_kernel_tests PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/include")
+ target_compile_definitions(dmt11_kernel_tests PRIVATE DMT_FAST_TACTICAL)
+ add_test(NAME dmt11_exact_kernels COMMAND dmt11_kernel_tests)
++
++# DMT12 exact-output performance options and self-describing research streams.
++option(DMT_FEATURE_LUT "Exact split-mask feature score lookup" ON)
++option(DMT_CACHE_OPPORTUNITY "Experimental opportunity node-reference cache" OFF)
++option(DMT_FAST_JOINT_CANDIDATES "Reuse check delivery between weights and flags" ON)
++option(DMT_VERIFY_JOINT_CANDIDATES "Compare fast candidate builder to original" OFF)
++foreach(feature DMT_FEATURE_LUT DMT_CACHE_OPPORTUNITY DMT_VERIFY_JOINT_CANDIDATES)
++ if(${feature})
++  target_compile_definitions(rmclib PRIVATE ${feature})
++ endif()
++endforeach()
++if(NOT DMT_FAST_JOINT_CANDIDATES)
++ target_compile_definitions(rmclib PRIVATE DMT_REFERENCE_JOINT_CANDIDATES)
++endif()
++add_executable(dmt12_tests tests/dmt12_tests.cpp)
++target_link_libraries(dmt12_tests PRIVATE rmclib)
++target_compile_definitions(dmt12_tests PRIVATE RMC_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
++add_test(NAME dmt12_configurable_roundtrip COMMAND dmt12_tests)
++add_executable(r12_search tools/r12_search.cpp)
++target_link_libraries(r12_search PRIVATE rmclib)
++add_executable(r12_speed tools/r12_speed.cpp)
++target_link_libraries(r12_speed PRIVATE rmclib)
+--- a/tools/mid_cli.cpp
++++ b/tools/mid_cli.cpp
+@@ -24,7 +24,8 @@
+     if(argc==2 && std::string(argv[1])=="main"){
+         std::cout<<"Main DMT profile: "<<unsigned(rmc::MID_DEFAULT_PROFILE)
+                  <<" ("<<rmc::mid_name(rmc::MID_DEFAULT_PROFILE)<<")\n"
+-                 <<"Alternatives: 119, 182, 228, 231 (explicit pack profile).\n";
++                 <<"Alternatives: 119, 182, 228, 231 (explicit pack profile).\n"
++                 <<"Compression candidate: 250 (r12-joint-all).\n";
+     }else if(argc>=4&&std::string(argv[1])=="pack"){
+         rmc::MidProfile chosen=rmc::MID_DEFAULT_PROFILE;
+         bool explicit_profile=false;
+--- a/tests/dmt11_kernel_tests.cpp
++++ b/tests/dmt11_kernel_tests.cpp
+@@ -22,6 +22,12 @@
+   "4k2r/6P1/8/8/8/8/1p6/R3K3 b - - 0 1"})check(Position::from_fen(fen));
+  for(unsigned g=0;g<128;++g){auto p=Position::standard();for(unsigned ply=0;ply<144;++ply){
+   check(p);auto legal=p.legal_moves();if(legal.empty())break;p.apply_unchecked(legal[rng()%legal.size()]);}}
++ uint64_t score_checks=0;
++ for(unsigned trial=0;trial<128;++trial){std::array<int16_t,10> theta{};
++  for(auto& t:theta)t=int16_t(int(rng()%49)-24);FeatureScore10 table(theta);
++  for(unsigned mask=0;mask<1024;++mask){int reference=0;for(unsigned b=0;b<10;++b)if(mask&(1u<<b))reference+=theta[b];
++   if(table(mask)!=reference)throw std::runtime_error("feature score table mismatch");++score_checks;}}
++ std::cout<<"score table PASS: "<<score_checks<<" exhaustive-mask comparisons\n";
+  std::cout<<"kernel PASS: "<<divisions<<" exact divisions, "<<maps<<" legal-candidate attack maps\n";
+ }
+ }
+--- a/README-MAIN.md
++++ b/README-MAIN.md
+@@ -1,34 +1,12 @@
+-# DMG-Entropy main model (2026-10-22)
++# DMG-Entropy current research models — 2026-10-22
+ 
+-**Current preferred research encoder: `DMT10/234` (`r10-combo-tact4-full`).**
++Default encoder: **234 / r10-combo-tact4-full**, with output-preserving performance changes.
++Compression-first candidate: **250 / r12-joint-all**. The default has not been switched.
+ 
+-This promotion changes only the *default selected profile for newly encoded DMT archives*. The probability calculation and old profile streams were not changed. Every DMT archive records its own version and numeric profile; the decoder follows that stored profile rather than the new default. The old `DMG8-Fast` and other unrelated codec CLIs are **not switched** to DMT10 by this change.
++Read **README-R12.md** for the current results, limitations, format, build and reproduction instructions. Earlier reports are historical records.
+ 
+-## Selection policy
+-
+-- Main (best compression on repeatedly used human development samples): `234`.
+-- Balanced alternative (weaker penalty on random-legal controls): `231`.
+-- Previous checkpoints: `182` and `119`, left intact.
+-- Production readiness: **research only**; generalization and 60–70K plies/s speed target are not met.
+-
+-## Usage
+-
+-```bash
+-cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+-cmake --build build --target dmg_mid dmt_default_tests dmt10_tests -j4
+-./build/dmg_mid main
+-./build/dmg_mid pack result.dmt examples/heldout/*.uci               # default 234
+-./build/dmg_mid pack default result.dmt examples/heldout/*.uci       # explicit default alias
+-./build/dmg_mid pack r10-combo-tact4-full result.dmt examples/heldout/*.uci
+-./build/dmg_mid pack r10-combo-tact2-mix result.dmt examples/heldout/*.uci  # 231
+-./build/dmg_mid unpack result.dmt /tmp/recovered
+-ctest --test-dir build -R 'dmt_default_profile|dmt10_focused_roundtrip' --output-on-failure
+-```
+-
+-Compatibility: an omitted profile in `pack` is only accepted if the archive filename ends in `.dmt`; unknown profile strings cause an error, never a silent fallback.
+-
+-For research comparisons pass explicit numeric IDs to `dmt9_experiments`; default selection must not confound historical results.
+-
+-## 2026-10-22 output-preserving optimization and DMT11 experiments
+-
+-See `README-R11.md`. Default remains 234. IDs 243–248 are isolated DMTB research candidates, not promoted defaults. `reference-dmt10/` contains the immutable source baseline used in comparisons.
++- 42 probability configurations explored; 50 new games for development, 25 for selection, 25 held out until the preset was frozen.
++- Existing IDs 0–248 remain byte-compatible. New configurable stream: DMTC/249; fixed preset: DMTD/250.
++- Normal build enables exact feature-score tables; opportunity-node cache is experimental and OFF.
++- LTO is optional; PGO was tested and is not a default recommendation.
++- Research only: no claim that all phase compression or 60–70K speed targets are met.

@@ -1,0 +1,95 @@
+{
+  "three_arm_byte_identity": [
+    {
+      "dataset": "r19",
+      "mode": 0,
+      "bytes": 12350,
+      "sha256": "c37ab6616a478ff18c1abe129bfa709b362258f3f8ffda6b8662f13a6576fd32"
+    },
+    {
+      "dataset": "r19",
+      "mode": 1,
+      "bytes": 12349,
+      "sha256": "3f287b3035c01347ce7ba26784bc2a980cc43f156328194b5e1d1ee573ef9ed8"
+    },
+    {
+      "dataset": "r19",
+      "mode": 2,
+      "bytes": 12370,
+      "sha256": "5dd957e0178d231910f15a13bf94baf429e449ae8752d544cbeb108b54838080"
+    },
+    {
+      "dataset": "r19",
+      "mode": 3,
+      "bytes": 12328,
+      "sha256": "61130c00f40eed8552dfa37e03e5ce62693b844a54dd4a0229b4434b73b500c6"
+    },
+    {
+      "dataset": "r19",
+      "mode": 4,
+      "bytes": 12402,
+      "sha256": "9fdf7534730f17ae903f326f49414254877776ab92a7b3c6dd04c236510fd1e2"
+    },
+    {
+      "dataset": "r18",
+      "mode": 0,
+      "bytes": 12888,
+      "sha256": "51f70b85101cdd3ee99064c117f1cbda7b892a45337a7f54a87a4fface7bb5a7"
+    },
+    {
+      "dataset": "r18",
+      "mode": 1,
+      "bytes": 12889,
+      "sha256": "e92071cb443b2fdb4a2314b2b82cd08fbf63a4f21a145ca78a4a248be60430b2"
+    },
+    {
+      "dataset": "r18",
+      "mode": 2,
+      "bytes": 12908,
+      "sha256": "607d32519252f2d6c3434bd2fdf279d017103989d8ae2dfecaced65be0fdf1ce"
+    },
+    {
+      "dataset": "r18",
+      "mode": 3,
+      "bytes": 12873,
+      "sha256": "4d6e8a5cab28c9b6719a5082ba054d56586e94ec97bf0049df4e151568c29aa6"
+    },
+    {
+      "dataset": "r18",
+      "mode": 4,
+      "bytes": 12941,
+      "sha256": "43d3c7003308a8dedd0d1ed7de99cc995fbbd2026ac551a47ea60ae3fa000351"
+    },
+    {
+      "dataset": "r17",
+      "mode": 0,
+      "bytes": 12658,
+      "sha256": "9dc01a60312a0b4284795fe612326d10590547d238eeb203abc13a1e93f982f9"
+    },
+    {
+      "dataset": "r17",
+      "mode": 1,
+      "bytes": 12658,
+      "sha256": "8c3fa1bf7537fecbe226fde2afc790213021fe122e3f30cb4c2352e1a29ea0ed"
+    },
+    {
+      "dataset": "r17",
+      "mode": 2,
+      "bytes": 12677,
+      "sha256": "5945a0306a28400ed0532f929eb3db71fc771c4c6008d516a87a16cf91120b39"
+    },
+    {
+      "dataset": "r17",
+      "mode": 3,
+      "bytes": 12639,
+      "sha256": "4eb910927162ad08c7971adca3aec4ff80285aa0ab64918694475fe8e60d2b25"
+    },
+    {
+      "dataset": "r17",
+      "mode": 4,
+      "bytes": 12717,
+      "sha256": "3ab370bf026ecff8e0258abf856014559c9c6f11aaa16132aeb28aeff54d0523"
+    }
+  ],
+  "existing_tests": "PASS 1226 checks; modes0..4, empty, CRC, truncation, wrong-table, R18 identity\n"
+}

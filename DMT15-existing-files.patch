@@ -1,0 +1,202 @@
+--- a/include/dmg_mid.hpp
++++ b/include/dmg_mid.hpp
+@@ -80,9 +80,9 @@
+     R10ComboTact2Gate=235,R10ComboTact4Gate=236,
+     R10ComboTact1Mix75=237,R10ComboTact2Mix25=238,
+     R10ComboTact2Mix75=239,R10ComboGeom2Mix=240,
+-    R10ComboHybrid2Mix=241,R10ComboTact3Full=242, R11SingleRate2=243,R11SingleRate4=244,R11Joint30Rate2=245,R11Joint30Rate4=246,R11Joint40Rate2=247,R11Joint40Rate4=248,R12Configurable=249,R12JointAll=250,R13Structure=251,R14Structure=252
++    R10ComboHybrid2Mix=241,R10ComboTact3Full=242, R11SingleRate2=243,R11SingleRate4=244,R11Joint30Rate2=245,R11Joint30Rate4=246,R11Joint40Rate2=247,R11Joint40Rate4=248,R12Configurable=249,R12JointAll=250,R13Structure=251,R14Structure=252,R15PawnSplit=253
+ };
+-constexpr unsigned MID_PROFILE_COUNT=253;
++constexpr unsigned MID_PROFILE_COUNT=254;
+ // Preferred research default as of 2026-10-22. Explicit archived profile IDs
+ // remain immutable. Decoder always reads the profile embedded in the header.
+ constexpr MidProfile MID_DEFAULT_PROFILE=MidProfile::R10ComboTact4Full;
+@@ -110,6 +110,11 @@
+     uint8_t structure=95,features=7,rate=1;
+     bool operator==(const Dmt14Config&) const = default;
+ };
++struct Dmt15Config {
++    uint8_t mode=7,rate=1,capture_rate=4;
++    bool operator==(const Dmt15Config&) const = default;
++};
++V6Archive mid_encode_pawn_split(const std::vector<std::vector<Move>>&,const Dmt15Config&,MidDiagnostics* =nullptr,std::vector<MidTrace>* =nullptr);
+ V6Archive mid_encode_structural(const std::vector<std::vector<Move>>&,const Dmt14Config&,MidDiagnostics* =nullptr,std::vector<MidTrace>* =nullptr);
+ V6Archive mid_encode_structure(const std::vector<std::vector<Move>>&,uint8_t,MidDiagnostics* =nullptr,std::vector<MidTrace>* =nullptr);
+ const char* mid_name(MidProfile);
+--- a/src/entropy.cpp
++++ b/src/entropy.cpp
+@@ -6,6 +6,7 @@
+ #include "dmg_phase.hpp"
+ #include "dmg_mid.hpp"
+ #include "dmt14_features.hpp"
++#include "dmt15_features.hpp"
+ #include <unordered_map>
+ #include <map>
+ #include <deque>
+@@ -2687,6 +2688,8 @@
+     uint8_t r13_mask=127;
+     Dmt14Config r14{};
+     bool r14_active=false;
++    bool r15_active=false;
++    Dmt15Config r15{};
+     Dmt12Config config{};
+     std::array<R12Model,3> r12{};
+     V8Context baseline; MidResidual mid,opening,plan;
+@@ -4035,7 +4038,7 @@
+ // Context is observable before the chosen move. One shared residual distribution.
+ MidStep mid_step(const Position& p,const Move* previous,const Move* own_previous,
+                  unsigned ply,unsigned stage,MidProfile profile,const MidContext& ctx){
+-    if(profile!=MidProfile::R12Configurable&&profile!=MidProfile::R12JointAll&&profile!=MidProfile::R13Structure&&profile!=MidProfile::R14Structure)return mid_step_legacy(p,previous,own_previous,ply,stage,profile,ctx);
++    if(profile!=MidProfile::R12Configurable&&profile!=MidProfile::R12JointAll&&profile!=MidProfile::R13Structure&&profile!=MidProfile::R14Structure&&profile!=MidProfile::R15PawnSplit)return mid_step_legacy(p,previous,own_previous,ply,stage,profile,ctx);
+     auto result=mid_step_legacy(p,previous,own_previous,ply,stage,ctx.config.base?MidProfile::R11Joint40Rate2:MidProfile::R10ComboTact4Full,ctx);
+     if(!(ctx.config.phase_mask&(1u<<stage)))return result;
+     const unsigned n=result.base.moves.size;const auto& model=ctx.r12[stage];
+@@ -4056,11 +4059,16 @@
+               uint8_t(96+piece*8+distance),
+               uint8_t(144+piece*4+unsigned(bool(f&(1u<<4)))+2*unsigned(bool(f&(1u<<8))))};
+         // Replace the existing center/distance categorical slots, not another model.
+-        if((structural&3)&&(piece==0||piece==3)&&((structural&4)||!(f&(1u<<4)))){
++        if((structural&3)&&(piece==0||piece==3)&&((structural&4)||!(f&(1u<<4)))&&!(ctx.r15_active&&piece==0&&ctx.r15.mode)){
+             const auto categories=detail::r14_categories(p,m,pawn_files);
+             if(structural&1)keys[1]=uint8_t(48+piece*4+categories[0]);
+             if(structural&2)keys[3]=uint8_t(96+piece*8+categories[1]);
+         }
++        if(ctx.r15_active&&stage==1&&piece==0&&ctx.r15.mode){
++            auto categories=detail::r15_categories(p,m,pawn_files,ctx.r15.mode,bool(f&(1u<<4)));
++            if(ctx.r15.mode>=7&&(f&(1u<<4))){keys[1]=uint8_t(detail::r15_center_bank[categories[0]]);keys[3]=uint8_t(detail::r15_distance_bank[categories[1]]);}
++            else {keys[1]=uint8_t(48+categories[0]);keys[3]=uint8_t(96+categories[1]);}
++        }
+         int score=0;for(unsigned k=0;k<5;++k){if(ctx.config.families&(1u<<k))score+=model.theta[keys[k]];else keys[k]=255;}
+         score=std::clamp(score,-128,128);raw[i]=uint64_t(result.coded.weights[i])*v8_exp2_lut[score+128];
+     }
+@@ -4069,7 +4077,7 @@
+     return result;
+ }
+ void mid_observe(MidContext&ctx,const Position&p,const MidStep&s,unsigned index,unsigned ply,unsigned stage,MidProfile profile){
+-    if(profile!=MidProfile::R12Configurable&&profile!=MidProfile::R12JointAll&&profile!=MidProfile::R13Structure&&profile!=MidProfile::R14Structure){mid_observe_legacy(ctx,p,s,index,ply,stage,profile);return;}
++    if(profile!=MidProfile::R12Configurable&&profile!=MidProfile::R12JointAll&&profile!=MidProfile::R13Structure&&profile!=MidProfile::R14Structure&&profile!=MidProfile::R15PawnSplit){mid_observe_legacy(ctx,p,s,index,ply,stage,profile);return;}
+     if(ctx.config.phase_mask&(1u<<stage)){
+         auto& model=ctx.r12[stage];std::array<uint32_t,168> sums{};
+         for(unsigned i=0;i<s.base.moves.size;++i)for(auto key:s.r12_features[i])if(key!=255)sums[key]+=s.coded.weights[i];
+@@ -4077,7 +4085,9 @@
+         std::array<bool,168> actual{};for(auto key:s.r12_features[index])if(key!=255)actual[key]=true;
+         for(unsigned k=0;k<168;++k){
+             const int32_t expected=int32_t(divide(uint64_t(sums[k])*4096+s.coded.total/2));
+-            model.residual[k]+=(ctx.r14_active&&stage==1?ctx.r14.rate:ctx.config.rate)*((actual[k]?4096:0)-expected);
++            int rate=ctx.r14_active&&stage==1?ctx.r14.rate:ctx.config.rate;
++            if(ctx.r15_active&&stage==1&&detail::r15_capture_key(ctx.r15.mode,k))rate=ctx.r15.capture_rate;
++            model.residual[k]+=rate*((actual[k]?4096:0)-expected);
+             int delta=model.residual[k]/4096;model.residual[k]-=delta*4096;
+             model.theta[k]=int16_t(std::clamp(int(model.theta[k])+delta,-int(ctx.config.cap),int(ctx.config.cap)));
+         }
+@@ -4170,17 +4180,17 @@
+ "r10-all-tact2","r10-all-geom2",
+ "r10-combo-tact2-mix","r10-combo-tact4-mix","r10-combo-tact2-full","r10-combo-tact4-full",
+ "r10-combo-tact2-gate","r10-combo-tact4-gate","r10-combo-tact1-mix75","r10-combo-tact2-mix25",
+-"r10-combo-tact2-mix75","r10-combo-geom2-mix","r10-combo-hybrid2-mix","r10-combo-tact3-full","r11-single-rate2","r11-single-rate4","r11-joint30-rate2","r11-joint30-rate4","r11-joint40-rate2","r11-joint40-rate4","r12-configurable","r12-joint-all","r13-structure","r14-structural"};
++"r10-combo-tact2-mix75","r10-combo-geom2-mix","r10-combo-hybrid2-mix","r10-combo-tact3-full","r11-single-rate2","r11-single-rate4","r11-joint30-rate2","r11-joint30-rate4","r11-joint40-rate2","r11-joint40-rate4","r12-configurable","r12-joint-all","r13-structure","r14-structural","r15-pawn-split"};
+ } // anonymous
+ const char* mid_name(MidProfile p){unsigned i=unsigned(p);return i<MID_PROFILE_COUNT?mid_names[i]:"invalid";}
+-static V6Archive mid_encode_impl(const std::vector<std::vector<Move>>& games,MidProfile profile,MidDiagnostics* diag,std::vector<MidTrace>* trace,const Dmt12Config* configuration,const uint8_t* structure=nullptr,const Dmt14Config* structural=nullptr){
++static V6Archive mid_encode_impl(const std::vector<std::vector<Move>>& games,MidProfile profile,MidDiagnostics* diag,std::vector<MidTrace>* trace,const Dmt12Config* configuration,const uint8_t* structure=nullptr,const Dmt14Config* structural=nullptr,const Dmt15Config* pawn_split=nullptr){
+     if(unsigned(profile)>=MID_PROFILE_COUNT)fail("bad DMT profile");
+     if(games.size()>100000)fail("too many DMT1 games");
+     if(diag)*diag={};
+     if(trace)trace->clear();
+     ArithmeticEncoder coder;MidContext ctx;
+     if(configuration)ctx.config=*configuration;
+-    if(profile==MidProfile::R12JointAll||profile==MidProfile::R13Structure||profile==MidProfile::R14Structure)ctx.config=R12_FIXED;
++    if(profile==MidProfile::R12JointAll||profile==MidProfile::R13Structure||profile==MidProfile::R14Structure||profile==MidProfile::R15PawnSplit)ctx.config=R12_FIXED;
+     if(profile==MidProfile::R13Structure){ctx.r13_mask=structure?*structure:127;if((ctx.r13_mask&128)&&!(ctx.r13_mask&2))fail("merge requires context");}
+     if(profile==MidProfile::R12Configurable||profile==MidProfile::R12JointAll)r12_validate(ctx.config);
+     if(profile==MidProfile::R14Structure){
+@@ -4188,6 +4198,11 @@
+         if(ctx.r14.features>7||!ctx.r14.rate||ctx.r14.rate>16||((ctx.r14.structure&128)&&!(ctx.r14.structure&2)))fail("invalid DMT14 config");
+         ctx.r13_mask=ctx.r14.structure;
+     }
++    if(profile==MidProfile::R15PawnSplit){
++        ctx.r15_active=true;ctx.r15=pawn_split?*pawn_split:Dmt15Config{};
++        if(ctx.r15.mode>9||!ctx.r15.rate||ctx.r15.rate>16||!ctx.r15.capture_rate||ctx.r15.capture_rate>16)fail("invalid DMT15 config");
++        ctx.r14_active=true;ctx.r14={95,7,ctx.r15.rate};ctx.r13_mask=95;
++    }
+     uint64_t total=0;
+     for(unsigned game_index=0;game_index<games.size();++game_index){
+         const auto& game=games[game_index];
+@@ -4217,11 +4232,12 @@
+         }
+     }
+     auto payload=total?coder.finish():EntropyPayload{};
+-    std::vector<uint8_t> bytes={'D','M','T',uint8_t(unsigned(profile)==252?'F':unsigned(profile)==251?'E':unsigned(profile)==250?'D':unsigned(profile)==249?'C':unsigned(profile)>=243?'B':mid_r10_profile(profile)?'A':(mid_r9_profile(profile)?'9':(mid_r8_profile(profile)?'8':(mid_r7_profile(profile)?'7':(mid_r6_profile(profile)?'6':(mid_r5_profile(profile)?'5':(mid_r4_profile(profile)?'4':(mid_r3_profile(profile)?'3':(mid_new_profile(profile)?'2':'1'))))))))),1,uint8_t(profile)};
++    std::vector<uint8_t> bytes={'D','M','T',uint8_t(unsigned(profile)==253?'G':unsigned(profile)==252?'F':unsigned(profile)==251?'E':unsigned(profile)==250?'D':unsigned(profile)==249?'C':unsigned(profile)>=243?'B':mid_r10_profile(profile)?'A':(mid_r9_profile(profile)?'9':(mid_r8_profile(profile)?'8':(mid_r7_profile(profile)?'7':(mid_r6_profile(profile)?'6':(mid_r5_profile(profile)?'5':(mid_r4_profile(profile)?'4':(mid_r3_profile(profile)?'3':(mid_new_profile(profile)?'2':'1'))))))))),1,uint8_t(profile)};
+     if(profile==MidProfile::R12Configurable){const auto& c=ctx.config;
+         for(auto value:{c.families,c.rate,c.alpha,c.phase_mask,c.base,c.decay_log2,c.cap})bytes.push_back(value);}
+     if(profile==MidProfile::R13Structure)bytes.push_back(ctx.r13_mask);
+     if(profile==MidProfile::R14Structure)for(auto value:{ctx.r14.structure,ctx.r14.features,ctx.r14.rate})bytes.push_back(value);
++    if(profile==MidProfile::R15PawnSplit)for(auto value:{ctx.r15.mode,ctx.r15.rate,ctx.r15.capture_rate})bytes.push_back(value);
+     v6_varint(bytes,uint32_t(games.size()));
+     for(const auto&g:games)v6_varint(bytes,uint32_t(g.size()));
+     v6_varint(bytes,payload.bit_count);
+@@ -4235,6 +4251,7 @@
+ V6Archive mid_encode_experimental(const std::vector<std::vector<Move>>& games,const Dmt12Config& config,MidDiagnostics* diag){return mid_encode_impl(games,MidProfile::R12Configurable,diag,nullptr,&config);}
+ V6Archive mid_encode_structure(const std::vector<std::vector<Move>>& games,uint8_t mask,MidDiagnostics* diag,std::vector<MidTrace>* trace){return mid_encode_impl(games,MidProfile::R13Structure,diag,trace,nullptr,&mask);}
+ V6Archive mid_encode_structural(const std::vector<std::vector<Move>>& games,const Dmt14Config& config,MidDiagnostics* diag,std::vector<MidTrace>* trace){return mid_encode_impl(games,MidProfile::R14Structure,diag,trace,nullptr,nullptr,&config);}
++V6Archive mid_encode_pawn_split(const std::vector<std::vector<Move>>& games,const Dmt15Config& config,MidDiagnostics* diag,std::vector<MidTrace>* trace){return mid_encode_impl(games,MidProfile::R15PawnSplit,diag,trace,nullptr,nullptr,nullptr,&config);}
+ std::vector<std::vector<Move>> mid_decode(const std::vector<uint8_t>&bytes){
+     if(bytes.size()<10||bytes[0]!='D'||bytes[1]!='M'||bytes[2]!='T'||bytes[4]!=1)
+         fail("bad DMT header");
+@@ -4250,7 +4267,7 @@
+         (version=='8' && id>=98 && id<125) ||
+         (version=='9' && id>=125 && id<189) ||
+         (version=='A' && id>=189 && id<243) ||
+-        (version=='B' && id>=243 && id<249) || (version=='C' && id==249) || (version=='D' && id==250) || (version=='E' && id==251) || (version=='F' && id==252);
++        (version=='B' && id>=243 && id<249) || (version=='C' && id==249) || (version=='D' && id==250) || (version=='E' && id==251) || (version=='F' && id==252) || (version=='G' && id==253);
+     if(!valid)fail("bad DMT header");
+     uint32_t crc=v6_crc(bytes.data(),bytes.size()-4),given=0;
+     for(unsigned k=0;k<4;++k)given|=uint32_t(bytes[bytes.size()-4+k])<<(8*k);
+@@ -4263,7 +4280,7 @@
+         r12_validate(configuration);off=13;
+     }
+     uint8_t structure=127;
+-    if(profile==MidProfile::R12JointAll||profile==MidProfile::R13Structure||profile==MidProfile::R14Structure)configuration=R12_FIXED;
++    if(profile==MidProfile::R12JointAll||profile==MidProfile::R13Structure||profile==MidProfile::R14Structure||profile==MidProfile::R15PawnSplit)configuration=R12_FIXED;
+     if(profile==MidProfile::R13Structure){if(bytes.size()<12)fail("short DMT13 header");structure=bytes[6];off=7;if((structure&128)&&!(structure&2))fail("merge requires context");}
+     Dmt14Config structural;
+     if(profile==MidProfile::R14Structure){
+@@ -4272,13 +4289,19 @@
+         if(structural.features>7||!structural.rate||structural.rate>16||((structural.structure&128)&&!(structural.structure&2)))fail("invalid DMT14 config");
+         structure=structural.structure;off=9;
+     }
++    Dmt15Config split;
++    if(profile==MidProfile::R15PawnSplit){
++        if(bytes.size()<14)fail("short DMT15 header");split={bytes[6],bytes[7],bytes[8]};
++        if(split.mode>9||!split.rate||split.rate>16||!split.capture_rate||split.capture_rate>16)fail("invalid DMT15 config");
++        structure=95;structural={95,7,split.rate};off=9;
++    }
+     uint32_t count=v6_unvar(bytes,off);
+     if(count>100000)fail("bad DMT1 archive size");
+     std::vector<uint32_t> lens;uint64_t total=0;
+     for(unsigned i=0;i<count;++i){auto x=v6_unvar(bytes,off);if(x>1000000||(total+=x)>300000000ULL)fail("bad DMT1 length");lens.push_back(x);}
+     uint32_t bits=v6_unvar(bytes,off);
+     if((uint64_t(bits)+7)/8!=bytes.size()-off-4||(total&&!bits))fail("bad DMT1 payload size");
+-    ArithmeticDecoder coder(bytes.data()+off,bits);MidContext ctx;ctx.config=configuration;ctx.r13_mask=structure;ctx.r14_active=profile==MidProfile::R14Structure;ctx.r14=structural;
++    ArithmeticDecoder coder(bytes.data()+off,bits);MidContext ctx;ctx.config=configuration;ctx.r13_mask=structure;ctx.r14_active=profile==MidProfile::R14Structure||profile==MidProfile::R15PawnSplit;ctx.r14=structural;ctx.r15_active=profile==MidProfile::R15PawnSplit;ctx.r15=split;
+     std::vector<std::vector<Move>> result;result.reserve(count);
+     for(auto len:lens){
+         Position p=Position::standard();Move previous{},own[2]{};bool has_prev=false,own_valid[2]={false,false};
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -204,3 +204,13 @@
+ target_link_libraries(dmt14_tests PRIVATE rmclib)
+ target_compile_definitions(dmt14_tests PRIVATE RMC_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
+ add_test(NAME dmt14_structural_roundtrip COMMAND dmt14_tests)
++
++# DMT15: reuse provably unused category slots for pawn capture context.
++foreach(tool r15_matrix r15_loss_trace r15_paired_speed)
++ add_executable(${tool} tools/${tool}.cpp)
++ target_link_libraries(${tool} PRIVATE rmclib)
++endforeach()
++add_executable(dmt15_tests tests/dmt15_tests.cpp)
++target_link_libraries(dmt15_tests PRIVATE rmclib)
++target_compile_definitions(dmt15_tests PRIVATE RMC_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
++add_test(NAME dmt15_pawn_split_roundtrip COMMAND dmt15_tests)

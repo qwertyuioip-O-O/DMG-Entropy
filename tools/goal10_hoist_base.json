@@ -1,0 +1,4 @@
+{
+  "base": "index",
+  "change": "hoist exact invariant divisors in V8Learn.observe and v09_cached_observe"
+}

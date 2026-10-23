@@ -1,0 +1,140 @@
+{
+  "r19": {
+    "baseline": {
+      "encode": {
+        "gain_percent": 10.76059814409428,
+        "faster_blocks": 3,
+        "blocks": 3,
+        "block_gains_percent": [
+          7.5698179461383575,
+          7.0113221878876475,
+          18.041770159003345
+        ]
+      },
+      "decode": {
+        "gain_percent": 9.455075649444186,
+        "faster_blocks": 3,
+        "blocks": 3,
+        "block_gains_percent": [
+          8.889791363638011,
+          5.580144080598482,
+          14.061295613474222
+        ]
+      }
+    },
+    "stage1": {
+      "encode": {
+        "gain_percent": 2.8612525641297815,
+        "faster_blocks": 2,
+        "blocks": 3,
+        "block_gains_percent": [
+          5.5483139219935085,
+          -0.4350324424704066,
+          3.5613179871311074
+        ]
+      },
+      "decode": {
+        "gain_percent": 6.102181898715609,
+        "faster_blocks": 2,
+        "blocks": 3,
+        "block_gains_percent": [
+          17.276339241061574,
+          -0.8737519334123811,
+          2.748117840020825
+        ]
+      }
+    }
+  },
+  "r18": {
+    "baseline": {
+      "encode": {
+        "gain_percent": 15.111520228166492,
+        "faster_blocks": 3,
+        "blocks": 3,
+        "block_gains_percent": [
+          11.889029307335864,
+          12.562672312126711,
+          21.108455991070738
+        ]
+      },
+      "decode": {
+        "gain_percent": 10.889622799182984,
+        "faster_blocks": 3,
+        "blocks": 3,
+        "block_gains_percent": [
+          7.64110739373931,
+          13.938265704653862,
+          11.179561514767178
+        ]
+      }
+    },
+    "stage1": {
+      "encode": {
+        "gain_percent": 4.884966009392023,
+        "faster_blocks": 2,
+        "blocks": 3,
+        "block_gains_percent": [
+          8.197388216886313,
+          9.111271025181233,
+          -2.2642763036199054
+        ]
+      },
+      "decode": {
+        "gain_percent": 4.597909068196413,
+        "faster_blocks": 3,
+        "blocks": 3,
+        "block_gains_percent": [
+          4.959189296988931,
+          3.556800896234158,
+          5.285827726304881
+        ]
+      }
+    }
+  },
+  "r17": {
+    "baseline": {
+      "encode": {
+        "gain_percent": 15.303853184858134,
+        "faster_blocks": 3,
+        "blocks": 3,
+        "block_gains_percent": [
+          19.361705542940477,
+          18.801899364722008,
+          8.104323188510797
+        ]
+      },
+      "decode": {
+        "gain_percent": 7.164807866811188,
+        "faster_blocks": 3,
+        "blocks": 3,
+        "block_gains_percent": [
+          8.549198731289342,
+          7.67488938610017,
+          5.296882347523013
+        ]
+      }
+    },
+    "stage1": {
+      "encode": {
+        "gain_percent": 0.327709128554209,
+        "faster_blocks": 2,
+        "blocks": 3,
+        "block_gains_percent": [
+          2.0721665141743895,
+          4.03071588453725,
+          -4.897098469157024
+        ]
+      },
+      "decode": {
+        "gain_percent": -1.8133753685398923,
+        "faster_blocks": 1,
+        "blocks": 3,
+        "block_gains_percent": [
+          2.369361771948175,
+          -5.844769388020321,
+          -1.7929774041701152
+        ]
+      }
+    }
+  }
+}

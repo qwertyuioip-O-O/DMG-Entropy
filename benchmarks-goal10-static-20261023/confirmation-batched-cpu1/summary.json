@@ -1,0 +1,107 @@
+{
+  "datasets": {
+    "r19": {
+      "encode": {
+        "gain_percent": 6.336265827493345,
+        "faster_blocks": 4,
+        "block_gains_percent": [
+          3.4215385862951253,
+          15.058169707163538,
+          7.366655931212729,
+          0.07549314118726613
+        ]
+      },
+      "decode": {
+        "gain_percent": 7.04039514483734,
+        "faster_blocks": 4,
+        "block_gains_percent": [
+          10.985913898064958,
+          8.136119930969677,
+          5.585862547969311,
+          3.596813550953759
+        ]
+      },
+      "process_cpu": {
+        "gain_percent": 7.454722987517144,
+        "faster_blocks": 4,
+        "block_gains_percent": [
+          8.816853088115861,
+          10.570727103570698,
+          7.8767449752124685,
+          2.715946913157219
+        ]
+      }
+    },
+    "r18": {
+      "encode": {
+        "gain_percent": 14.839796145933043,
+        "faster_blocks": 4,
+        "block_gains_percent": [
+          12.373967884477022,
+          7.389399826065102,
+          13.458719304910227,
+          27.0295160176818
+        ]
+      },
+      "decode": {
+        "gain_percent": 11.011971057924079,
+        "faster_blocks": 4,
+        "block_gains_percent": [
+          6.213691782091479,
+          10.2542752466378,
+          7.477425603915422,
+          20.666316836450505
+        ]
+      },
+      "process_cpu": {
+        "gain_percent": 13.156730199691813,
+        "faster_blocks": 4,
+        "block_gains_percent": [
+          8.486774158618937,
+          9.65490196694807,
+          11.31350630416197,
+          23.813741711274062
+        ]
+      }
+    },
+    "r17": {
+      "encode": {
+        "gain_percent": 11.807941397671355,
+        "faster_blocks": 4,
+        "block_gains_percent": [
+          9.656430628353597,
+          10.386762589194332,
+          13.67050146169464,
+          13.577348987416915
+        ]
+      },
+      "decode": {
+        "gain_percent": 12.460359293434674,
+        "faster_blocks": 4,
+        "block_gains_percent": [
+          11.251902285887594,
+          17.260841556616224,
+          8.246173034262384,
+          13.272598439831285
+        ]
+      },
+      "process_cpu": {
+        "gain_percent": 11.36527022835336,
+        "faster_blocks": 4,
+        "block_gains_percent": [
+          9.884297922418428,
+          11.461812684091587,
+          11.985311560213363,
+          12.144066178563161
+        ]
+      }
+    }
+  },
+  "aggregate_gain_percent": {
+    "encode": 10.938466031596645,
+    "decode": 10.146912493634968,
+    "process_cpu": 10.633136380944576
+  },
+  "both_10_percent_target_on_this_confirmation": true,
+  "cgroup_after": "usage_usec 3209441228\nuser_usec 3139863326\nsystem_usec 69577902\nnice_usec 0\nnr_periods 37127\nnr_throttled 0\nthrottled_usec 0\nnr_bursts 0\nburst_usec 0\n"
+}

@@ -1,0 +1,1426 @@
+{
+  "general": {
+    "games": 5000,
+    "plies": 347515,
+    "sources": {
+      "user-ramdon6382": 136,
+      "03RkjGs4": 41,
+      "user-lletz": 145,
+      "F3vG9fY1": 313,
+      "4fcciBhP": 314,
+      "user-fube101": 141,
+      "EV0tkwjw": 314,
+      "UJnYRbhF": 85,
+      "user-shalapayuliy": 144,
+      "6buwlg2q": 314,
+      "user-rodolfoyoldi530": 141,
+      "La61YSa8": 166,
+      "Ew3SQ5ks": 314,
+      "user-PeaceMakerPieceTaker": 106,
+      "vmDZkEiz": 313,
+      "user-Audi20": 140,
+      "itJKwKZh": 275,
+      "user-blunder-master12": 143,
+      "user-GUESSWHOAMI-48": 131,
+      "user-PiecesExterminator": 129,
+      "RBEpMX0i": 101,
+      "E6L1oEt3": 274,
+      "user-doktercantik": 117,
+      "user-shanothmatheesha123": 69,
+      "user-quangtruongdn2211": 140,
+      "user-iiiiDANiii": 125,
+      "user-The_Rogue_Bishop": 131,
+      "ocCjDZtW": 73,
+      "xuVgqjm2": 47,
+      "Pkwsb7gN": 24,
+      "FKfRfWh3": 38,
+      "user-DrBlunderStein2021": 36,
+      "vKWf669K": 20
+    },
+    "overall": {
+      "payload_bit_per_ply": {
+        "value": 3.3470152367523704,
+        "ci95": [
+          3.3374162695946414,
+          3.356768939525112
+        ]
+      },
+      "framed_bit_per_ply": {
+        "value": 3.474934894896623,
+        "ci95": [
+          3.4645838697679743,
+          3.485337387494147
+        ]
+      },
+      "native_encode_plies_per_second": {
+        "value": 78024.96466575885,
+        "ci95": [
+          76487.59735682164,
+          79538.68814441067
+        ]
+      },
+      "native_decode_plies_per_second": {
+        "value": 77815.75346077622,
+        "ci95": [
+          75981.49888865562,
+          79436.206746538
+        ]
+      }
+    },
+    "phases": {
+      "opening": {
+        "plies": 116925,
+        "cdf_bit_per_ply": {
+          "value": 3.5363092199116877,
+          "ci95": [
+            3.5224796183864835,
+            3.548912273851922
+          ]
+        },
+        "diagnostic_encode_plies_per_second": {
+          "value": 86199.06943878444,
+          "ci95": [
+            84834.31033832485,
+            87472.02672927864
+          ]
+        },
+        "diagnostic_decode_plies_per_second": {
+          "value": 86639.96311731769,
+          "ci95": [
+            85087.26692362616,
+            88155.43018176638
+          ]
+        }
+      },
+      "middlegame": {
+        "plies": 161076,
+        "cdf_bit_per_ply": {
+          "value": 3.3245914611994047,
+          "ci95": [
+            3.314821000343313,
+            3.3348191991457234
+          ]
+        },
+        "diagnostic_encode_plies_per_second": {
+          "value": 60848.54758145147,
+          "ci95": [
+            59987.906584933386,
+            61627.840295388465
+          ]
+        },
+        "diagnostic_decode_plies_per_second": {
+          "value": 61189.740576081924,
+          "ci95": [
+            59977.03149313402,
+            62313.18278782613
+          ]
+        }
+      },
+      "endgame": {
+        "plies": 69514,
+        "cdf_bit_per_ply": {
+          "value": 3.0802313355728552,
+          "ci95": [
+            3.058880949284891,
+            3.1026924531747095
+          ]
+        },
+        "diagnostic_encode_plies_per_second": {
+          "value": 144544.85940427255,
+          "ci95": [
+            142395.77386353922,
+            146623.57839005304
+          ]
+        },
+        "diagnostic_decode_plies_per_second": {
+          "value": 145147.27363400327,
+          "ci95": [
+            142592.323996702,
+            147519.45411642373
+          ]
+        }
+      }
+    },
+    "native_repeat_max_over_min": [
+      {
+        "block": 0,
+        "phase": "encode",
+        "max_over_min": 1.028153536453724
+      },
+      {
+        "block": 0,
+        "phase": "decode",
+        "max_over_min": 1.0257799012520008
+      },
+      {
+        "block": 1,
+        "phase": "encode",
+        "max_over_min": 1.0182692487954856
+      },
+      {
+        "block": 1,
+        "phase": "decode",
+        "max_over_min": 1.024663486916522
+      },
+      {
+        "block": 2,
+        "phase": "encode",
+        "max_over_min": 1.1788345286090007
+      },
+      {
+        "block": 2,
+        "phase": "decode",
+        "max_over_min": 1.0537748296816236
+      },
+      {
+        "block": 3,
+        "phase": "encode",
+        "max_over_min": 1.0208935491224072
+      },
+      {
+        "block": 3,
+        "phase": "decode",
+        "max_over_min": 1.000238707308116
+      },
+      {
+        "block": 4,
+        "phase": "encode",
+        "max_over_min": 1.108273604989492
+      },
+      {
+        "block": 4,
+        "phase": "decode",
+        "max_over_min": 1.0215428381091276
+      },
+      {
+        "block": 5,
+        "phase": "encode",
+        "max_over_min": 1.0225706840753344
+      },
+      {
+        "block": 5,
+        "phase": "decode",
+        "max_over_min": 1.0850137584564454
+      },
+      {
+        "block": 6,
+        "phase": "encode",
+        "max_over_min": 1.0000513203321826
+      },
+      {
+        "block": 6,
+        "phase": "decode",
+        "max_over_min": 1.0644313219756103
+      },
+      {
+        "block": 7,
+        "phase": "encode",
+        "max_over_min": 1.1111922106297616
+      },
+      {
+        "block": 7,
+        "phase": "decode",
+        "max_over_min": 1.0646171812005893
+      },
+      {
+        "block": 8,
+        "phase": "encode",
+        "max_over_min": 1.0453163361661946
+      },
+      {
+        "block": 8,
+        "phase": "decode",
+        "max_over_min": 1.0503797933886245
+      },
+      {
+        "block": 9,
+        "phase": "encode",
+        "max_over_min": 1.0614998475287936
+      },
+      {
+        "block": 9,
+        "phase": "decode",
+        "max_over_min": 1.0242086799497767
+      },
+      {
+        "block": 10,
+        "phase": "encode",
+        "max_over_min": 1.0784008816538482
+      },
+      {
+        "block": 10,
+        "phase": "decode",
+        "max_over_min": 1.0984321109471609
+      },
+      {
+        "block": 11,
+        "phase": "encode",
+        "max_over_min": 1.0085739290565487
+      },
+      {
+        "block": 11,
+        "phase": "decode",
+        "max_over_min": 1.0048616529620071
+      },
+      {
+        "block": 12,
+        "phase": "encode",
+        "max_over_min": 1.2674933610225403
+      },
+      {
+        "block": 12,
+        "phase": "decode",
+        "max_over_min": 1.1405637620896414
+      },
+      {
+        "block": 13,
+        "phase": "encode",
+        "max_over_min": 1.0314200128778193
+      },
+      {
+        "block": 13,
+        "phase": "decode",
+        "max_over_min": 1.0134677152433653
+      },
+      {
+        "block": 14,
+        "phase": "encode",
+        "max_over_min": 1.0662782549894894
+      },
+      {
+        "block": 14,
+        "phase": "decode",
+        "max_over_min": 1.074316471109143
+      },
+      {
+        "block": 15,
+        "phase": "encode",
+        "max_over_min": 1.058171139500986
+      },
+      {
+        "block": 15,
+        "phase": "decode",
+        "max_over_min": 1.1587652445184389
+      },
+      {
+        "block": 16,
+        "phase": "encode",
+        "max_over_min": 1.0239103484130123
+      },
+      {
+        "block": 16,
+        "phase": "decode",
+        "max_over_min": 1.0161923713591376
+      },
+      {
+        "block": 17,
+        "phase": "encode",
+        "max_over_min": 1.0627817965059476
+      },
+      {
+        "block": 17,
+        "phase": "decode",
+        "max_over_min": 1.0223197006837828
+      },
+      {
+        "block": 18,
+        "phase": "encode",
+        "max_over_min": 1.0043666648994365
+      },
+      {
+        "block": 18,
+        "phase": "decode",
+        "max_over_min": 1.033039946492444
+      },
+      {
+        "block": 19,
+        "phase": "encode",
+        "max_over_min": 1.027682552171144
+      },
+      {
+        "block": 19,
+        "phase": "decode",
+        "max_over_min": 1.0238991875123569
+      }
+    ],
+    "native_repeat_groups_over_1_25": 1,
+    "blocks": [
+      {
+        "plies": 17004,
+        "payload_bits": 56637,
+        "archive_bits": 58848,
+        "encode_seconds": 0.208553,
+        "decode_seconds": 0.2094545
+      },
+      {
+        "plies": 17531,
+        "payload_bits": 58406,
+        "archive_bits": 60600,
+        "encode_seconds": 0.215313,
+        "decode_seconds": 0.2147925
+      },
+      {
+        "plies": 17423,
+        "payload_bits": 58752,
+        "archive_bits": 60976,
+        "encode_seconds": 0.24563200000000002,
+        "decode_seconds": 0.22880899999999998
+      },
+      {
+        "plies": 18099,
+        "payload_bits": 60495,
+        "archive_bits": 62768,
+        "encode_seconds": 0.2216415,
+        "decode_seconds": 0.217866
+      },
+      {
+        "plies": 17839,
+        "payload_bits": 59321,
+        "archive_bits": 61560,
+        "encode_seconds": 0.2322295,
+        "decode_seconds": 0.224555
+      },
+      {
+        "plies": 17305,
+        "payload_bits": 57696,
+        "archive_bits": 59944,
+        "encode_seconds": 0.218112,
+        "decode_seconds": 0.2239065
+      },
+      {
+        "plies": 16598,
+        "payload_bits": 55681,
+        "archive_bits": 57864,
+        "encode_seconds": 0.21434550000000002,
+        "decode_seconds": 0.2281145
+      },
+      {
+        "plies": 17146,
+        "payload_bits": 57936,
+        "archive_bits": 60128,
+        "encode_seconds": 0.221273,
+        "decode_seconds": 0.22276600000000002
+      },
+      {
+        "plies": 17002,
+        "payload_bits": 57327,
+        "archive_bits": 59544,
+        "encode_seconds": 0.21659899999999999,
+        "decode_seconds": 0.2174315
+      },
+      {
+        "plies": 16709,
+        "payload_bits": 56058,
+        "archive_bits": 58256,
+        "encode_seconds": 0.2197095,
+        "decode_seconds": 0.215225
+      },
+      {
+        "plies": 18237,
+        "payload_bits": 60477,
+        "archive_bits": 62712,
+        "encode_seconds": 0.2225375,
+        "decode_seconds": 0.2318075
+      },
+      {
+        "plies": 18008,
+        "payload_bits": 59961,
+        "archive_bits": 62232,
+        "encode_seconds": 0.22032649999999998,
+        "decode_seconds": 0.21711950000000002
+      },
+      {
+        "plies": 17622,
+        "payload_bits": 58908,
+        "archive_bits": 61112,
+        "encode_seconds": 0.2467645,
+        "decode_seconds": 0.2329415
+      },
+      {
+        "plies": 16900,
+        "payload_bits": 57286,
+        "archive_bits": 59472,
+        "encode_seconds": 0.21768900000000002,
+        "decode_seconds": 0.21595750000000002
+      },
+      {
+        "plies": 16972,
+        "payload_bits": 57186,
+        "archive_bits": 59416,
+        "encode_seconds": 0.210842,
+        "decode_seconds": 0.2248725
+      },
+      {
+        "plies": 17997,
+        "payload_bits": 59647,
+        "archive_bits": 61888,
+        "encode_seconds": 0.2400445,
+        "decode_seconds": 0.2671105
+      },
+      {
+        "plies": 17281,
+        "payload_bits": 58314,
+        "archive_bits": 60552,
+        "encode_seconds": 0.22773949999999998,
+        "decode_seconds": 0.228983
+      },
+      {
+        "plies": 17511,
+        "payload_bits": 58425,
+        "archive_bits": 60656,
+        "encode_seconds": 0.230126,
+        "decode_seconds": 0.21945
+      },
+      {
+        "plies": 17482,
+        "payload_bits": 58067,
+        "archive_bits": 60288,
+        "encode_seconds": 0.207934,
+        "decode_seconds": 0.2097345
+      },
+      {
+        "plies": 16849,
+        "payload_bits": 56558,
+        "archive_bits": 58776,
+        "encode_seconds": 0.2164835,
+        "decode_seconds": 0.2149725
+      }
+    ]
+  },
+  "elite": {
+    "games": 5000,
+    "plies": 455147,
+    "sources": {
+      "0saFcidQ": 68,
+      "archive-Anand": 506,
+      "archive-VachierLagrave": 505,
+      "archive-Aronian": 505,
+      "archive-Ding": 505,
+      "lD2y4p3R": 85,
+      "archive-Caruana": 505,
+      "archive-Carlsen": 505,
+      "AbN0a0LQ": 79,
+      "archive-Giri": 505,
+      "sM3C0X6U": 28,
+      "jhoP80Kf": 76,
+      "archive-Nakamura": 505,
+      "e5GlrSdz": 17,
+      "Bkg9PAup": 68,
+      "8WPaC96J": 107,
+      "2sMqschv": 48,
+      "n1pPI5Q0": 130,
+      "d63PvEma": 56,
+      "CVBr8BVD": 133,
+      "2X7ZNbmv": 22,
+      "8gvkBl7u": 17,
+      "fkrN18wc": 11,
+      "ExIMb7zV": 6,
+      "IZMEzwvJ": 8
+    },
+    "overall": {
+      "payload_bit_per_ply": {
+        "value": 3.5029430052268826,
+        "ci95": [
+          3.494039304784469,
+          3.5114662198320863
+        ]
+      },
+      "framed_bit_per_ply": {
+        "value": 3.609857914036564,
+        "ci95": [
+          3.60083128660495,
+          3.6184766412481375
+        ]
+      },
+      "native_encode_plies_per_second": {
+        "value": 77231.00052262562,
+        "ci95": [
+          76374.36171070309,
+          78120.10834213154
+        ]
+      },
+      "native_decode_plies_per_second": {
+        "value": 76924.62401923204,
+        "ci95": [
+          75868.05419347041,
+          77871.1299900674
+        ]
+      }
+    },
+    "phases": {
+      "opening": {
+        "plies": 118208,
+        "cdf_bit_per_ply": {
+          "value": 3.186104118559292,
+          "ci95": [
+            3.1709173321703115,
+            3.202095250988626
+          ]
+        },
+        "diagnostic_encode_plies_per_second": {
+          "value": 82793.37707320771,
+          "ci95": [
+            80073.45873482125,
+            85343.39261162639
+          ]
+        },
+        "diagnostic_decode_plies_per_second": {
+          "value": 83433.00190795326,
+          "ci95": [
+            80460.70682386101,
+            85965.32604081719
+          ]
+        }
+      },
+      "middlegame": {
+        "plies": 222406,
+        "cdf_bit_per_ply": {
+          "value": 3.7573043767286913,
+          "ci95": [
+            3.7448537857116917,
+            3.7698717879520243
+          ]
+        },
+        "diagnostic_encode_plies_per_second": {
+          "value": 57732.03381079315,
+          "ci95": [
+            56157.050694717946,
+            59192.80502589158
+          ]
+        },
+        "diagnostic_decode_plies_per_second": {
+          "value": 57385.588345029784,
+          "ci95": [
+            55281.91733871315,
+            59079.676438505325
+          ]
+        }
+      },
+      "endgame": {
+        "plies": 114533,
+        "cdf_bit_per_ply": {
+          "value": 3.335838507715956,
+          "ci95": [
+            3.323275378378379,
+            3.3482609889048125
+          ]
+        },
+        "diagnostic_encode_plies_per_second": {
+          "value": 138014.94233806492,
+          "ci95": [
+            133974.81019209357,
+            141691.65955101178
+          ]
+        },
+        "diagnostic_decode_plies_per_second": {
+          "value": 138229.79882820553,
+          "ci95": [
+            132914.5286555457,
+            142683.95537952668
+          ]
+        }
+      }
+    },
+    "native_repeat_max_over_min": [
+      {
+        "block": 0,
+        "phase": "encode",
+        "max_over_min": 1.0065647858652564
+      },
+      {
+        "block": 0,
+        "phase": "decode",
+        "max_over_min": 1.0171501248666872
+      },
+      {
+        "block": 1,
+        "phase": "encode",
+        "max_over_min": 1.049616570809369
+      },
+      {
+        "block": 1,
+        "phase": "decode",
+        "max_over_min": 1.0380332171187867
+      },
+      {
+        "block": 2,
+        "phase": "encode",
+        "max_over_min": 1.0400665739232962
+      },
+      {
+        "block": 2,
+        "phase": "decode",
+        "max_over_min": 1.0092613286197065
+      },
+      {
+        "block": 3,
+        "phase": "encode",
+        "max_over_min": 1.022064900103213
+      },
+      {
+        "block": 3,
+        "phase": "decode",
+        "max_over_min": 1.0004002374289833
+      },
+      {
+        "block": 4,
+        "phase": "encode",
+        "max_over_min": 1.1017681356130098
+      },
+      {
+        "block": 4,
+        "phase": "decode",
+        "max_over_min": 1.0371949988463312
+      },
+      {
+        "block": 5,
+        "phase": "encode",
+        "max_over_min": 1.0937464265294454
+      },
+      {
+        "block": 5,
+        "phase": "decode",
+        "max_over_min": 1.0505378547635835
+      },
+      {
+        "block": 6,
+        "phase": "encode",
+        "max_over_min": 1.0348821455246564
+      },
+      {
+        "block": 6,
+        "phase": "decode",
+        "max_over_min": 1.0519741539340284
+      },
+      {
+        "block": 7,
+        "phase": "encode",
+        "max_over_min": 1.0626187907741305
+      },
+      {
+        "block": 7,
+        "phase": "decode",
+        "max_over_min": 1.1192268657546434
+      },
+      {
+        "block": 8,
+        "phase": "encode",
+        "max_over_min": 1.000917342775658
+      },
+      {
+        "block": 8,
+        "phase": "decode",
+        "max_over_min": 1.0256063373785969
+      },
+      {
+        "block": 9,
+        "phase": "encode",
+        "max_over_min": 1.0988374163858752
+      },
+      {
+        "block": 9,
+        "phase": "decode",
+        "max_over_min": 1.0720977829529907
+      },
+      {
+        "block": 10,
+        "phase": "encode",
+        "max_over_min": 1.0467435011511197
+      },
+      {
+        "block": 10,
+        "phase": "decode",
+        "max_over_min": 1.0224911265069263
+      },
+      {
+        "block": 11,
+        "phase": "encode",
+        "max_over_min": 1.0230444618320986
+      },
+      {
+        "block": 11,
+        "phase": "decode",
+        "max_over_min": 1.0069616472961196
+      },
+      {
+        "block": 12,
+        "phase": "encode",
+        "max_over_min": 1.0190233302997593
+      },
+      {
+        "block": 12,
+        "phase": "decode",
+        "max_over_min": 1.0140153712296984
+      },
+      {
+        "block": 13,
+        "phase": "encode",
+        "max_over_min": 1.1418016280454946
+      },
+      {
+        "block": 13,
+        "phase": "decode",
+        "max_over_min": 1.1913798237049655
+      },
+      {
+        "block": 14,
+        "phase": "encode",
+        "max_over_min": 1.087692424988044
+      },
+      {
+        "block": 14,
+        "phase": "decode",
+        "max_over_min": 1.1049725491290365
+      },
+      {
+        "block": 15,
+        "phase": "encode",
+        "max_over_min": 1.0238496405539697
+      },
+      {
+        "block": 15,
+        "phase": "decode",
+        "max_over_min": 1.0119655140666308
+      },
+      {
+        "block": 16,
+        "phase": "encode",
+        "max_over_min": 1.0232083962311396
+      },
+      {
+        "block": 16,
+        "phase": "decode",
+        "max_over_min": 1.0919843213050675
+      },
+      {
+        "block": 17,
+        "phase": "encode",
+        "max_over_min": 1.0504458151445482
+      },
+      {
+        "block": 17,
+        "phase": "decode",
+        "max_over_min": 1.0186633022388676
+      },
+      {
+        "block": 18,
+        "phase": "encode",
+        "max_over_min": 1.0238474265217028
+      },
+      {
+        "block": 18,
+        "phase": "decode",
+        "max_over_min": 1.0549284739163312
+      },
+      {
+        "block": 19,
+        "phase": "encode",
+        "max_over_min": 1.0828301141414
+      },
+      {
+        "block": 19,
+        "phase": "decode",
+        "max_over_min": 1.0042292527865317
+      }
+    ],
+    "native_repeat_groups_over_1_25": 0,
+    "blocks": [
+      {
+        "plies": 23233,
+        "payload_bits": 81201,
+        "archive_bits": 83648,
+        "encode_seconds": 0.309018,
+        "decode_seconds": 0.304511
+      },
+      {
+        "plies": 22921,
+        "payload_bits": 80252,
+        "archive_bits": 82656,
+        "encode_seconds": 0.29507099999999997,
+        "decode_seconds": 0.291988
+      },
+      {
+        "plies": 23017,
+        "payload_bits": 80594,
+        "archive_bits": 83024,
+        "encode_seconds": 0.28376,
+        "decode_seconds": 0.29668150000000004
+      },
+      {
+        "plies": 23051,
+        "payload_bits": 81446,
+        "archive_bits": 83928,
+        "encode_seconds": 0.2850515,
+        "decode_seconds": 0.29488400000000003
+      },
+      {
+        "plies": 21763,
+        "payload_bits": 75815,
+        "archive_bits": 78184,
+        "encode_seconds": 0.28802,
+        "decode_seconds": 0.2825345
+      },
+      {
+        "plies": 22146,
+        "payload_bits": 77472,
+        "archive_bits": 79856,
+        "encode_seconds": 0.292957,
+        "decode_seconds": 0.29517800000000005
+      },
+      {
+        "plies": 22385,
+        "payload_bits": 77871,
+        "archive_bits": 80296,
+        "encode_seconds": 0.2928755,
+        "decode_seconds": 0.28739950000000003
+      },
+      {
+        "plies": 22925,
+        "payload_bits": 80828,
+        "archive_bits": 83240,
+        "encode_seconds": 0.3011475,
+        "decode_seconds": 0.3048635
+      },
+      {
+        "plies": 22337,
+        "payload_bits": 78269,
+        "archive_bits": 80704,
+        "encode_seconds": 0.28028549999999997,
+        "decode_seconds": 0.27999450000000004
+      },
+      {
+        "plies": 22887,
+        "payload_bits": 80142,
+        "archive_bits": 82584,
+        "encode_seconds": 0.2946285,
+        "decode_seconds": 0.2900595
+      },
+      {
+        "plies": 23220,
+        "payload_bits": 81377,
+        "archive_bits": 83800,
+        "encode_seconds": 0.292933,
+        "decode_seconds": 0.29031949999999995
+      },
+      {
+        "plies": 23878,
+        "payload_bits": 82819,
+        "archive_bits": 85288,
+        "encode_seconds": 0.3089725,
+        "decode_seconds": 0.3074595
+      },
+      {
+        "plies": 22149,
+        "payload_bits": 77447,
+        "archive_bits": 79832,
+        "encode_seconds": 0.2861905,
+        "decode_seconds": 0.277773
+      },
+      {
+        "plies": 22462,
+        "payload_bits": 77866,
+        "archive_bits": 80264,
+        "encode_seconds": 0.302054,
+        "decode_seconds": 0.3164725
+      },
+      {
+        "plies": 22723,
+        "payload_bits": 79698,
+        "archive_bits": 82176,
+        "encode_seconds": 0.301206,
+        "decode_seconds": 0.3017415
+      },
+      {
+        "plies": 23130,
+        "payload_bits": 81095,
+        "archive_bits": 83528,
+        "encode_seconds": 0.3062975,
+        "decode_seconds": 0.30594350000000003
+      },
+      {
+        "plies": 21049,
+        "payload_bits": 73707,
+        "archive_bits": 76088,
+        "encode_seconds": 0.282798,
+        "decode_seconds": 0.2900735
+      },
+      {
+        "plies": 23830,
+        "payload_bits": 84266,
+        "archive_bits": 86800,
+        "encode_seconds": 0.30367,
+        "decode_seconds": 0.304801
+      },
+      {
+        "plies": 23232,
+        "payload_bits": 82267,
+        "archive_bits": 84736,
+        "encode_seconds": 0.2911345,
+        "decode_seconds": 0.300298
+      },
+      {
+        "plies": 22809,
+        "payload_bits": 79922,
+        "archive_bits": 82384,
+        "encode_seconds": 0.2952495,
+        "decode_seconds": 0.29381599999999997
+      }
+    ]
+  },
+  "random": {
+    "games": 5000,
+    "plies": 1744692,
+    "sources": {
+      "uniform-legal-v1": 5000
+    },
+    "overall": {
+      "payload_bit_per_ply": {
+        "value": 4.461241296458057,
+        "ci95": [
+          4.453034436702701,
+          4.469859353975794
+        ]
+      },
+      "framed_bit_per_ply": {
+        "value": 4.507523390948087,
+        "ci95": [
+          4.499036174740268,
+          4.516371148218282
+        ]
+      },
+      "native_encode_plies_per_second": {
+        "value": 101052.74132230149,
+        "ci95": [
+          99926.84530810629,
+          102128.24641633524
+        ]
+      },
+      "native_decode_plies_per_second": {
+        "value": 102856.11099832934,
+        "ci95": [
+          101777.56087513771,
+          103934.25326204978
+        ]
+      }
+    },
+    "phases": {
+      "opening": {
+        "plies": 119741,
+        "cdf_bit_per_ply": {
+          "value": 4.9242070598612715,
+          "ci95": [
+            4.91799420555124,
+            4.930799228405982
+          ]
+        },
+        "diagnostic_encode_plies_per_second": {
+          "value": 87112.84846077874,
+          "ci95": [
+            85527.05488645783,
+            88627.6424140174
+          ]
+        },
+        "diagnostic_decode_plies_per_second": {
+          "value": 88251.86267491893,
+          "ci95": [
+            87004.68196680133,
+            89439.9842509327
+          ]
+        }
+      },
+      "middlegame": {
+        "plies": 632869,
+        "cdf_bit_per_ply": {
+          "value": 5.345245603412204,
+          "ci95": [
+            5.341689756519999,
+            5.348738303053573
+          ]
+        },
+        "diagnostic_encode_plies_per_second": {
+          "value": 61405.81245891847,
+          "ci95": [
+            60444.486377184534,
+            62310.2618567085
+          ]
+        },
+        "diagnostic_decode_plies_per_second": {
+          "value": 62002.007395336856,
+          "ci95": [
+            61165.1349841478,
+            62775.44953385311
+          ]
+        }
+      },
+      "endgame": {
+        "plies": 992082,
+        "cdf_bit_per_ply": {
+          "value": 3.841419134515078,
+          "ci95": [
+            3.83169379155555,
+            3.8512346223342284
+          ]
+        },
+        "diagnostic_encode_plies_per_second": {
+          "value": 164373.92839738954,
+          "ci95": [
+            161283.0207251973,
+            167191.81527467183
+          ]
+        },
+        "diagnostic_decode_plies_per_second": {
+          "value": 166415.02525530706,
+          "ci95": [
+            164136.6122290259,
+            168528.77350087115
+          ]
+        }
+      }
+    },
+    "native_repeat_max_over_min": [
+      {
+        "block": 0,
+        "phase": "encode",
+        "max_over_min": 1.0506759370285847
+      },
+      {
+        "block": 0,
+        "phase": "decode",
+        "max_over_min": 1.0192806669392644
+      },
+      {
+        "block": 1,
+        "phase": "encode",
+        "max_over_min": 1.0306451441530675
+      },
+      {
+        "block": 1,
+        "phase": "decode",
+        "max_over_min": 1.0056711699038154
+      },
+      {
+        "block": 2,
+        "phase": "encode",
+        "max_over_min": 1.018657157467902
+      },
+      {
+        "block": 2,
+        "phase": "decode",
+        "max_over_min": 1.0703836013110504
+      },
+      {
+        "block": 3,
+        "phase": "encode",
+        "max_over_min": 1.0204529138738636
+      },
+      {
+        "block": 3,
+        "phase": "decode",
+        "max_over_min": 1.0069046611922867
+      },
+      {
+        "block": 4,
+        "phase": "encode",
+        "max_over_min": 1.046106899170701
+      },
+      {
+        "block": 4,
+        "phase": "decode",
+        "max_over_min": 1.0491119670067117
+      },
+      {
+        "block": 5,
+        "phase": "encode",
+        "max_over_min": 1.0323447645709398
+      },
+      {
+        "block": 5,
+        "phase": "decode",
+        "max_over_min": 1.0228928438576406
+      },
+      {
+        "block": 6,
+        "phase": "encode",
+        "max_over_min": 1.0623716757324824
+      },
+      {
+        "block": 6,
+        "phase": "decode",
+        "max_over_min": 1.0693146927020072
+      },
+      {
+        "block": 7,
+        "phase": "encode",
+        "max_over_min": 1.0236532187015126
+      },
+      {
+        "block": 7,
+        "phase": "decode",
+        "max_over_min": 1.042141729771001
+      },
+      {
+        "block": 8,
+        "phase": "encode",
+        "max_over_min": 1.0957004841322833
+      },
+      {
+        "block": 8,
+        "phase": "decode",
+        "max_over_min": 1.0196917284668556
+      },
+      {
+        "block": 9,
+        "phase": "encode",
+        "max_over_min": 1.018012723198989
+      },
+      {
+        "block": 9,
+        "phase": "decode",
+        "max_over_min": 1.0250168045829144
+      },
+      {
+        "block": 10,
+        "phase": "encode",
+        "max_over_min": 1.0824144225530508
+      },
+      {
+        "block": 10,
+        "phase": "decode",
+        "max_over_min": 1.0117421310277908
+      },
+      {
+        "block": 11,
+        "phase": "encode",
+        "max_over_min": 1.036443422434755
+      },
+      {
+        "block": 11,
+        "phase": "decode",
+        "max_over_min": 1.0715521359377085
+      },
+      {
+        "block": 12,
+        "phase": "encode",
+        "max_over_min": 1.0050014536969907
+      },
+      {
+        "block": 12,
+        "phase": "decode",
+        "max_over_min": 1.0369675034354617
+      },
+      {
+        "block": 13,
+        "phase": "encode",
+        "max_over_min": 1.1126647132000496
+      },
+      {
+        "block": 13,
+        "phase": "decode",
+        "max_over_min": 1.0233498962438365
+      },
+      {
+        "block": 14,
+        "phase": "encode",
+        "max_over_min": 1.0574071085602557
+      },
+      {
+        "block": 14,
+        "phase": "decode",
+        "max_over_min": 1.008497696108238
+      },
+      {
+        "block": 15,
+        "phase": "encode",
+        "max_over_min": 1.0407310547655122
+      },
+      {
+        "block": 15,
+        "phase": "decode",
+        "max_over_min": 1.0698171113689774
+      },
+      {
+        "block": 16,
+        "phase": "encode",
+        "max_over_min": 1.0422016834461132
+      },
+      {
+        "block": 16,
+        "phase": "decode",
+        "max_over_min": 1.0477022476808053
+      },
+      {
+        "block": 17,
+        "phase": "encode",
+        "max_over_min": 1.0494692852161032
+      },
+      {
+        "block": 17,
+        "phase": "decode",
+        "max_over_min": 1.0150562838933137
+      },
+      {
+        "block": 18,
+        "phase": "encode",
+        "max_over_min": 1.0257549436074653
+      },
+      {
+        "block": 18,
+        "phase": "decode",
+        "max_over_min": 1.0031614478343374
+      },
+      {
+        "block": 19,
+        "phase": "encode",
+        "max_over_min": 1.0784323207352227
+      },
+      {
+        "block": 19,
+        "phase": "decode",
+        "max_over_min": 1.022799034347351
+      }
+    ],
+    "native_repeat_groups_over_1_25": 0,
+    "blocks": [
+      {
+        "plies": 87068,
+        "payload_bits": 386278,
+        "archive_bits": 390288,
+        "encode_seconds": 0.848258,
+        "decode_seconds": 0.8074224999999999
+      },
+      {
+        "plies": 87327,
+        "payload_bits": 390168,
+        "archive_bits": 394224,
+        "encode_seconds": 0.8600300000000001,
+        "decode_seconds": 0.8411824999999999
+      },
+      {
+        "plies": 83782,
+        "payload_bits": 373692,
+        "archive_bits": 377672,
+        "encode_seconds": 0.8112105000000001,
+        "decode_seconds": 0.842966
+      },
+      {
+        "plies": 88582,
+        "payload_bits": 394381,
+        "archive_bits": 398408,
+        "encode_seconds": 0.8527665,
+        "decode_seconds": 0.8729955
+      },
+      {
+        "plies": 83366,
+        "payload_bits": 373733,
+        "archive_bits": 377728,
+        "encode_seconds": 0.831101,
+        "decode_seconds": 0.8267675
+      },
+      {
+        "plies": 87152,
+        "payload_bits": 389453,
+        "archive_bits": 393440,
+        "encode_seconds": 0.836318,
+        "decode_seconds": 0.8374655
+      },
+      {
+        "plies": 85416,
+        "payload_bits": 383040,
+        "archive_bits": 387064,
+        "encode_seconds": 0.847775,
+        "decode_seconds": 0.869734
+      },
+      {
+        "plies": 91504,
+        "payload_bits": 405866,
+        "archive_bits": 409904,
+        "encode_seconds": 0.875143,
+        "decode_seconds": 0.8960049999999999
+      },
+      {
+        "plies": 86853,
+        "payload_bits": 386871,
+        "archive_bits": 390936,
+        "encode_seconds": 0.8757115,
+        "decode_seconds": 0.8422164999999999
+      },
+      {
+        "plies": 89099,
+        "payload_bits": 399413,
+        "archive_bits": 403440,
+        "encode_seconds": 0.868701,
+        "decode_seconds": 0.839008
+      },
+      {
+        "plies": 88038,
+        "payload_bits": 391024,
+        "archive_bits": 395032,
+        "encode_seconds": 0.8943844999999999,
+        "decode_seconds": 0.8303355
+      },
+      {
+        "plies": 85626,
+        "payload_bits": 383796,
+        "archive_bits": 387864,
+        "encode_seconds": 0.8404290000000001,
+        "decode_seconds": 0.8304635
+      },
+      {
+        "plies": 85361,
+        "payload_bits": 379623,
+        "archive_bits": 383648,
+        "encode_seconds": 0.8172014999999999,
+        "decode_seconds": 0.841952
+      },
+      {
+        "plies": 88216,
+        "payload_bits": 392310,
+        "archive_bits": 396368,
+        "encode_seconds": 0.8958385,
+        "decode_seconds": 0.850244
+      },
+      {
+        "plies": 90143,
+        "payload_bits": 401036,
+        "archive_bits": 405144,
+        "encode_seconds": 0.8796835,
+        "decode_seconds": 0.8687335
+      },
+      {
+        "plies": 87799,
+        "payload_bits": 395027,
+        "archive_bits": 399120,
+        "encode_seconds": 0.9145475000000001,
+        "decode_seconds": 0.8838295
+      },
+      {
+        "plies": 87458,
+        "payload_bits": 389759,
+        "archive_bits": 393800,
+        "encode_seconds": 0.866159,
+        "decode_seconds": 0.8690305
+      },
+      {
+        "plies": 89515,
+        "payload_bits": 396412,
+        "archive_bits": 400480,
+        "encode_seconds": 0.9006485,
+        "decode_seconds": 0.8459034999999999
+      },
+      {
+        "plies": 87371,
+        "payload_bits": 391721,
+        "archive_bits": 395760,
+        "encode_seconds": 0.8681544999999999,
+        "decode_seconds": 0.847152
+      },
+      {
+        "plies": 85016,
+        "payload_bits": 379889,
+        "archive_bits": 383920,
+        "encode_seconds": 0.8811015,
+        "decode_seconds": 0.8190465
+      }
+    ]
+  }
+}

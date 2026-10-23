@@ -34,15 +34,17 @@ See the [full cohort benchmark report](README-Cohorts-20261023-KO.md) for cohort
 
 ### Download and build
 
-Download and extract the [DMT19 source and research bundle](DMG-Entropy-DMT19-Source.zip), then build and run the tests:
+Clone the repository, then build and run the tests from its root:
 
 ```sh
+git clone https://github.com/qwertyuioip-O-O/DMG-Entropy.git
+cd DMG-Entropy
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build -j
 ctest --test-dir build --output-on-failure
 ```
 
-The bundle includes source code, tests, examples, benchmark tools, and selected reports. Raw game corpora, local benchmark binaries, and build outputs are excluded.
+The repository contains source code, tests, examples, benchmark tools, and selected reports. Raw game corpora and generated build outputs are not included.
 
 ### Project contents
 
@@ -61,7 +63,7 @@ Start with the [cohort benchmark report](README-Cohorts-20261023-KO.md), then co
 
 ### License
 
-See the source bundle for the licenses and notices that apply to the included code.
+A project-level license has not been specified in this repository yet.
 
 ---
 
@@ -97,15 +99,17 @@ DMG-Entropy는 체스에서 가능한 합법 수를 진행 순서에 따라 모�
 
 ### 다운로드 및 빌드
 
-[DMT19 소스·연구 묶음](DMG-Entropy-DMT19-Source.zip)을 내려받아 압축을 푼 뒤, 다음 명령으로 빌드하고 테스트를 실행합니다.
+저장소를 복제한 뒤 루트 디렉터리에서 다음 명령으로 빌드하고 테스트를 실행합니다.
 
 ```sh
+git clone https://github.com/qwertyuioip-O-O/DMG-Entropy.git
+cd DMG-Entropy
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build -j
 ctest --test-dir build --output-on-failure
 ```
 
-묶음에는 소스 코드, 테스트, 예제, 벤치마크 도구와 일부 연구 보고서가 들어 있습니다. 원본 기보 데이터셋, 로컬 벤치마크 실행 파일, 빌드 결과물은 포함되어 있지 않습니다.
+저장소에는 소스 코드, 테스트, 예제, 벤치마크 도구와 일부 연구 보고서가 들어 있습니다. 원본 기보 데이터셋과 생성된 빌드 결과물은 포함되어 있지 않습니다.
 
 ### 저장소 구성
 
@@ -124,4 +128,4 @@ ctest --test-dir build --output-on-failure
 
 ### 라이선스
 
-포함된 코드의 라이선스와 고지 사항은 소스 묶음 안의 문서를 확인하세요.
+현재 저장소에는 프로젝트 라이선스가 별도로 지정되어 있지 않습니다.

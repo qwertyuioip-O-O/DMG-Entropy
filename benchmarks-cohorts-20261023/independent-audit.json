@@ -1,0 +1,8 @@
+{
+  "native_rows": 120,
+  "phase_rows": 360,
+  "all_native_and_phase_aggregate_points_independently_reconstructed": true,
+  "rows_removed": 0,
+  "maximum_block_payload_minus_theoretical_CDF_absolute_bits": 1.9124036778957816,
+  "theoretical_CDF_vs_arithmetic_payload_sanity_bound_bits": 64
+}

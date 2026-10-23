@@ -1,0 +1,30 @@
+{
+  "current_builder": "tools/build_r19_current.py",
+  "implementation": "LTO + audited scratch + exact paged lookup + grouped own attacks + index rank features + portable magic sliding + constexpr knight/king tables",
+  "fallback_builder": "tools/build_goal10_index.py",
+  "candidate_binary_sha256": "872c463c64bf2b9a9bdcd794eece9d6bbba0246a253ff2985f48c3f468afa0df",
+  "goal_anchor_binary_sha256": "7c466d55510493aa2366aa310f50583083a161f88304f64e2941089ca9333918",
+  "confirmed_gain_percent": {
+    "encode": 10.938466031596645,
+    "decode": 10.146912493634968
+  },
+  "goal_achieved": true,
+  "cpu_portability": "portable compiler baseline; no march=native or required optional ISA extensions",
+  "goal_anchor_builder": "tools/build_r19_scratch.py",
+  "confirmation": "benchmarks-goal10-static-20261023/confirmation-batched-cpu1/summary.json",
+  "confirmation_scope": "Observed equal-dataset geometric mean phase wall-time point estimates on this host, CPU1; predeclared two-native-call mean units. Individual native-call variation remains; no confidence-bound claim of >=10% and no claim for every dataset or CPU.",
+  "latest_attempt": {
+    "adopted": true,
+    "report": "README-Goal10-Magic-Static-20261023.md",
+    "single_call_screen_quality_passed": true,
+    "two_call_mean_confirmation_quality_passed": true,
+    "individual_confirmation_raw_quality_passed": false,
+    "reporting": "all 96 native calls retained; zero removed; every mean and aggregate independently reconstructed"
+  },
+  "direct_screen_gain_vs_previous_index_percent": {
+    "encode": 2.6743546965485887,
+    "decode": 2.9042273485776873
+  },
+  "read_only_attack_table_bytes": 861184,
+  "goal_anchor_unchanged": true
+}

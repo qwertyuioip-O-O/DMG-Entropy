@@ -1,0 +1,216 @@
+--- a/include/dmg_mid.hpp
++++ b/include/dmg_mid.hpp
+@@ -80,9 +80,9 @@
+     R10ComboTact2Gate=235,R10ComboTact4Gate=236,
+     R10ComboTact1Mix75=237,R10ComboTact2Mix25=238,
+     R10ComboTact2Mix75=239,R10ComboGeom2Mix=240,
+-    R10ComboHybrid2Mix=241,R10ComboTact3Full=242, R11SingleRate2=243,R11SingleRate4=244,R11Joint30Rate2=245,R11Joint30Rate4=246,R11Joint40Rate2=247,R11Joint40Rate4=248,R12Configurable=249,R12JointAll=250,R13Structure=251
++    R10ComboHybrid2Mix=241,R10ComboTact3Full=242, R11SingleRate2=243,R11SingleRate4=244,R11Joint30Rate2=245,R11Joint30Rate4=246,R11Joint40Rate2=247,R11Joint40Rate4=248,R12Configurable=249,R12JointAll=250,R13Structure=251,R14Structure=252
+ };
+-constexpr unsigned MID_PROFILE_COUNT=252;
++constexpr unsigned MID_PROFILE_COUNT=253;
+ // Preferred research default as of 2026-10-22. Explicit archived profile IDs
+ // remain immutable. Decoder always reads the profile embedded in the header.
+ constexpr MidProfile MID_DEFAULT_PROFILE=MidProfile::R10ComboTact4Full;
+@@ -106,6 +106,11 @@
+     bool operator==(const Dmt12Config&) const = default;
+ };
+ V6Archive mid_encode_experimental(const std::vector<std::vector<Move>>&,const Dmt12Config&,MidDiagnostics* =nullptr);
++struct Dmt14Config {
++    uint8_t structure=95,features=7,rate=1;
++    bool operator==(const Dmt14Config&) const = default;
++};
++V6Archive mid_encode_structural(const std::vector<std::vector<Move>>&,const Dmt14Config&,MidDiagnostics* =nullptr,std::vector<MidTrace>* =nullptr);
+ V6Archive mid_encode_structure(const std::vector<std::vector<Move>>&,uint8_t,MidDiagnostics* =nullptr,std::vector<MidTrace>* =nullptr);
+ const char* mid_name(MidProfile);
+ V6Archive mid_encode(const std::vector<std::vector<Move>>&,MidProfile = MID_DEFAULT_PROFILE,MidDiagnostics* =nullptr, std::vector<MidTrace>* =nullptr);
+--- a/src/entropy.cpp
++++ b/src/entropy.cpp
+@@ -5,6 +5,7 @@
+ #include "dmg_v9.hpp"
+ #include "dmg_phase.hpp"
+ #include "dmg_mid.hpp"
++#include "dmt14_features.hpp"
+ #include <unordered_map>
+ #include <map>
+ #include <deque>
+@@ -2684,6 +2685,8 @@
+ }
+ struct MidContext {
+     uint8_t r13_mask=127;
++    Dmt14Config r14{};
++    bool r14_active=false;
+     Dmt12Config config{};
+     std::array<R12Model,3> r12{};
+     V8Context baseline; MidResidual mid,opening,plan;
+@@ -4032,10 +4035,13 @@
+ // Context is observable before the chosen move. One shared residual distribution.
+ MidStep mid_step(const Position& p,const Move* previous,const Move* own_previous,
+                  unsigned ply,unsigned stage,MidProfile profile,const MidContext& ctx){
+-    if(profile!=MidProfile::R12Configurable&&profile!=MidProfile::R12JointAll&&profile!=MidProfile::R13Structure)return mid_step_legacy(p,previous,own_previous,ply,stage,profile,ctx);
++    if(profile!=MidProfile::R12Configurable&&profile!=MidProfile::R12JointAll&&profile!=MidProfile::R13Structure&&profile!=MidProfile::R14Structure)return mid_step_legacy(p,previous,own_previous,ply,stage,profile,ctx);
+     auto result=mid_step_legacy(p,previous,own_previous,ply,stage,ctx.config.base?MidProfile::R11Joint40Rate2:MidProfile::R10ComboTact4Full,ctx);
+     if(!(ctx.config.phase_mask&(1u<<stage)))return result;
+     const unsigned n=result.base.moves.size;const auto& model=ctx.r12[stage];
++    detail::R14PawnFiles pawn_files{};
++    const unsigned structural=ctx.r14_active&&stage==1?ctx.r14.features:0;
++    if(structural&3)pawn_files=detail::r14_pawn_files(p);
+     std::array<uint64_t,256> raw{};
+     for(unsigned i=0;i<n;++i){
+         auto m=result.base.moves.a[i].m;const unsigned piece=unsigned(abs_piece(p.board[m.from])-1);
+@@ -4049,6 +4055,12 @@
+               uint8_t(72+piece*4+unsigned(bool(f&(1u<<2)))+2*unsigned(bool(f&(1u<<3)))),
+               uint8_t(96+piece*8+distance),
+               uint8_t(144+piece*4+unsigned(bool(f&(1u<<4)))+2*unsigned(bool(f&(1u<<8))))};
++        // Replace the existing center/distance categorical slots, not another model.
++        if((structural&3)&&(piece==0||piece==3)&&((structural&4)||!(f&(1u<<4)))){
++            const auto categories=detail::r14_categories(p,m,pawn_files);
++            if(structural&1)keys[1]=uint8_t(48+piece*4+categories[0]);
++            if(structural&2)keys[3]=uint8_t(96+piece*8+categories[1]);
++        }
+         int score=0;for(unsigned k=0;k<5;++k){if(ctx.config.families&(1u<<k))score+=model.theta[keys[k]];else keys[k]=255;}
+         score=std::clamp(score,-128,128);raw[i]=uint64_t(result.coded.weights[i])*v8_exp2_lut[score+128];
+     }
+@@ -4057,7 +4069,7 @@
+     return result;
+ }
+ void mid_observe(MidContext&ctx,const Position&p,const MidStep&s,unsigned index,unsigned ply,unsigned stage,MidProfile profile){
+-    if(profile!=MidProfile::R12Configurable&&profile!=MidProfile::R12JointAll&&profile!=MidProfile::R13Structure){mid_observe_legacy(ctx,p,s,index,ply,stage,profile);return;}
++    if(profile!=MidProfile::R12Configurable&&profile!=MidProfile::R12JointAll&&profile!=MidProfile::R13Structure&&profile!=MidProfile::R14Structure){mid_observe_legacy(ctx,p,s,index,ply,stage,profile);return;}
+     if(ctx.config.phase_mask&(1u<<stage)){
+         auto& model=ctx.r12[stage];std::array<uint32_t,168> sums{};
+         for(unsigned i=0;i<s.base.moves.size;++i)for(auto key:s.r12_features[i])if(key!=255)sums[key]+=s.coded.weights[i];
+@@ -4065,7 +4077,7 @@
+         std::array<bool,168> actual{};for(auto key:s.r12_features[index])if(key!=255)actual[key]=true;
+         for(unsigned k=0;k<168;++k){
+             const int32_t expected=int32_t(divide(uint64_t(sums[k])*4096+s.coded.total/2));
+-            model.residual[k]+=ctx.config.rate*((actual[k]?4096:0)-expected);
++            model.residual[k]+=(ctx.r14_active&&stage==1?ctx.r14.rate:ctx.config.rate)*((actual[k]?4096:0)-expected);
+             int delta=model.residual[k]/4096;model.residual[k]-=delta*4096;
+             model.theta[k]=int16_t(std::clamp(int(model.theta[k])+delta,-int(ctx.config.cap),int(ctx.config.cap)));
+         }
+@@ -4158,19 +4170,24 @@
+ "r10-all-tact2","r10-all-geom2",
+ "r10-combo-tact2-mix","r10-combo-tact4-mix","r10-combo-tact2-full","r10-combo-tact4-full",
+ "r10-combo-tact2-gate","r10-combo-tact4-gate","r10-combo-tact1-mix75","r10-combo-tact2-mix25",
+-"r10-combo-tact2-mix75","r10-combo-geom2-mix","r10-combo-hybrid2-mix","r10-combo-tact3-full","r11-single-rate2","r11-single-rate4","r11-joint30-rate2","r11-joint30-rate4","r11-joint40-rate2","r11-joint40-rate4","r12-configurable","r12-joint-all","r13-structure"};
++"r10-combo-tact2-mix75","r10-combo-geom2-mix","r10-combo-hybrid2-mix","r10-combo-tact3-full","r11-single-rate2","r11-single-rate4","r11-joint30-rate2","r11-joint30-rate4","r11-joint40-rate2","r11-joint40-rate4","r12-configurable","r12-joint-all","r13-structure","r14-structural"};
+ } // anonymous
+ const char* mid_name(MidProfile p){unsigned i=unsigned(p);return i<MID_PROFILE_COUNT?mid_names[i]:"invalid";}
+-static V6Archive mid_encode_impl(const std::vector<std::vector<Move>>& games,MidProfile profile,MidDiagnostics* diag,std::vector<MidTrace>* trace,const Dmt12Config* configuration,const uint8_t* structure=nullptr){
++static V6Archive mid_encode_impl(const std::vector<std::vector<Move>>& games,MidProfile profile,MidDiagnostics* diag,std::vector<MidTrace>* trace,const Dmt12Config* configuration,const uint8_t* structure=nullptr,const Dmt14Config* structural=nullptr){
+     if(unsigned(profile)>=MID_PROFILE_COUNT)fail("bad DMT profile");
+     if(games.size()>100000)fail("too many DMT1 games");
+     if(diag)*diag={};
+     if(trace)trace->clear();
+     ArithmeticEncoder coder;MidContext ctx;
+     if(configuration)ctx.config=*configuration;
+-    if(profile==MidProfile::R12JointAll||profile==MidProfile::R13Structure)ctx.config=R12_FIXED;
++    if(profile==MidProfile::R12JointAll||profile==MidProfile::R13Structure||profile==MidProfile::R14Structure)ctx.config=R12_FIXED;
+     if(profile==MidProfile::R13Structure){ctx.r13_mask=structure?*structure:127;if((ctx.r13_mask&128)&&!(ctx.r13_mask&2))fail("merge requires context");}
+     if(profile==MidProfile::R12Configurable||profile==MidProfile::R12JointAll)r12_validate(ctx.config);
++    if(profile==MidProfile::R14Structure){
++        ctx.r14_active=true;ctx.r14=structural?*structural:Dmt14Config{};
++        if(ctx.r14.features>7||!ctx.r14.rate||ctx.r14.rate>16||((ctx.r14.structure&128)&&!(ctx.r14.structure&2)))fail("invalid DMT14 config");
++        ctx.r13_mask=ctx.r14.structure;
++    }
+     uint64_t total=0;
+     for(unsigned game_index=0;game_index<games.size();++game_index){
+         const auto& game=games[game_index];
+@@ -4200,10 +4217,11 @@
+         }
+     }
+     auto payload=total?coder.finish():EntropyPayload{};
+-    std::vector<uint8_t> bytes={'D','M','T',uint8_t(unsigned(profile)==251?'E':unsigned(profile)==250?'D':unsigned(profile)==249?'C':unsigned(profile)>=243?'B':mid_r10_profile(profile)?'A':(mid_r9_profile(profile)?'9':(mid_r8_profile(profile)?'8':(mid_r7_profile(profile)?'7':(mid_r6_profile(profile)?'6':(mid_r5_profile(profile)?'5':(mid_r4_profile(profile)?'4':(mid_r3_profile(profile)?'3':(mid_new_profile(profile)?'2':'1'))))))))),1,uint8_t(profile)};
++    std::vector<uint8_t> bytes={'D','M','T',uint8_t(unsigned(profile)==252?'F':unsigned(profile)==251?'E':unsigned(profile)==250?'D':unsigned(profile)==249?'C':unsigned(profile)>=243?'B':mid_r10_profile(profile)?'A':(mid_r9_profile(profile)?'9':(mid_r8_profile(profile)?'8':(mid_r7_profile(profile)?'7':(mid_r6_profile(profile)?'6':(mid_r5_profile(profile)?'5':(mid_r4_profile(profile)?'4':(mid_r3_profile(profile)?'3':(mid_new_profile(profile)?'2':'1'))))))))),1,uint8_t(profile)};
+     if(profile==MidProfile::R12Configurable){const auto& c=ctx.config;
+         for(auto value:{c.families,c.rate,c.alpha,c.phase_mask,c.base,c.decay_log2,c.cap})bytes.push_back(value);}
+     if(profile==MidProfile::R13Structure)bytes.push_back(ctx.r13_mask);
++    if(profile==MidProfile::R14Structure)for(auto value:{ctx.r14.structure,ctx.r14.features,ctx.r14.rate})bytes.push_back(value);
+     v6_varint(bytes,uint32_t(games.size()));
+     for(const auto&g:games)v6_varint(bytes,uint32_t(g.size()));
+     v6_varint(bytes,payload.bit_count);
+@@ -4216,6 +4234,7 @@
+ V6Archive mid_encode(const std::vector<std::vector<Move>>& games,MidProfile profile,MidDiagnostics* diag,std::vector<MidTrace>* trace){return mid_encode_impl(games,profile,diag,trace,nullptr);}
+ V6Archive mid_encode_experimental(const std::vector<std::vector<Move>>& games,const Dmt12Config& config,MidDiagnostics* diag){return mid_encode_impl(games,MidProfile::R12Configurable,diag,nullptr,&config);}
+ V6Archive mid_encode_structure(const std::vector<std::vector<Move>>& games,uint8_t mask,MidDiagnostics* diag,std::vector<MidTrace>* trace){return mid_encode_impl(games,MidProfile::R13Structure,diag,trace,nullptr,&mask);}
++V6Archive mid_encode_structural(const std::vector<std::vector<Move>>& games,const Dmt14Config& config,MidDiagnostics* diag,std::vector<MidTrace>* trace){return mid_encode_impl(games,MidProfile::R14Structure,diag,trace,nullptr,nullptr,&config);}
+ std::vector<std::vector<Move>> mid_decode(const std::vector<uint8_t>&bytes){
+     if(bytes.size()<10||bytes[0]!='D'||bytes[1]!='M'||bytes[2]!='T'||bytes[4]!=1)
+         fail("bad DMT header");
+@@ -4231,7 +4250,7 @@
+         (version=='8' && id>=98 && id<125) ||
+         (version=='9' && id>=125 && id<189) ||
+         (version=='A' && id>=189 && id<243) ||
+-        (version=='B' && id>=243 && id<249) || (version=='C' && id==249) || (version=='D' && id==250) || (version=='E' && id==251);
++        (version=='B' && id>=243 && id<249) || (version=='C' && id==249) || (version=='D' && id==250) || (version=='E' && id==251) || (version=='F' && id==252);
+     if(!valid)fail("bad DMT header");
+     uint32_t crc=v6_crc(bytes.data(),bytes.size()-4),given=0;
+     for(unsigned k=0;k<4;++k)given|=uint32_t(bytes[bytes.size()-4+k])<<(8*k);
+@@ -4244,15 +4263,22 @@
+         r12_validate(configuration);off=13;
+     }
+     uint8_t structure=127;
+-    if(profile==MidProfile::R12JointAll||profile==MidProfile::R13Structure)configuration=R12_FIXED;
++    if(profile==MidProfile::R12JointAll||profile==MidProfile::R13Structure||profile==MidProfile::R14Structure)configuration=R12_FIXED;
+     if(profile==MidProfile::R13Structure){if(bytes.size()<12)fail("short DMT13 header");structure=bytes[6];off=7;if((structure&128)&&!(structure&2))fail("merge requires context");}
++    Dmt14Config structural;
++    if(profile==MidProfile::R14Structure){
++        if(bytes.size()<14)fail("short DMT14 header");
++        structural={bytes[6],bytes[7],bytes[8]};
++        if(structural.features>7||!structural.rate||structural.rate>16||((structural.structure&128)&&!(structural.structure&2)))fail("invalid DMT14 config");
++        structure=structural.structure;off=9;
++    }
+     uint32_t count=v6_unvar(bytes,off);
+     if(count>100000)fail("bad DMT1 archive size");
+     std::vector<uint32_t> lens;uint64_t total=0;
+     for(unsigned i=0;i<count;++i){auto x=v6_unvar(bytes,off);if(x>1000000||(total+=x)>300000000ULL)fail("bad DMT1 length");lens.push_back(x);}
+     uint32_t bits=v6_unvar(bytes,off);
+     if((uint64_t(bits)+7)/8!=bytes.size()-off-4||(total&&!bits))fail("bad DMT1 payload size");
+-    ArithmeticDecoder coder(bytes.data()+off,bits);MidContext ctx;ctx.config=configuration;ctx.r13_mask=structure;
++    ArithmeticDecoder coder(bytes.data()+off,bits);MidContext ctx;ctx.config=configuration;ctx.r13_mask=structure;ctx.r14_active=profile==MidProfile::R14Structure;ctx.r14=structural;
+     std::vector<std::vector<Move>> result;result.reserve(count);
+     for(auto len:lens){
+         Position p=Position::standard();Move previous{},own[2]{};bool has_prev=false,own_valid[2]={false,false};
+--- a/tools/mid_cli.cpp
++++ b/tools/mid_cli.cpp
+@@ -31,11 +31,14 @@
+         rmc::MidProfile chosen=rmc::MID_DEFAULT_PROFILE;
+         bool explicit_profile=false;
+         int structure_mask=-1;
++        bool pawn_rook=false;
+         std::string selector=argv[2];
+         if(selector=="best"||selector=="default"){
+             explicit_profile=true;
+         }else if(selector=="r13-no-specialists"){
+             chosen=rmc::MidProfile::R13Structure;explicit_profile=true;structure_mask=95;
++        }else if(selector=="r14-pawn-rook"){
++            chosen=rmc::MidProfile::R14Structure;explicit_profile=true;pawn_rook=true;
+         }else{
+             for(unsigned i=0;i<rmc::MID_PROFILE_COUNT;++i){
+                 auto p=rmc::MidProfile(i);
+@@ -55,7 +58,7 @@
+         std::vector<std::vector<rmc::Move>> games;
+         for(int i=first_input;i<argc;++i){auto bytes=read(argv[i]);
+             games.push_back(rmc::parse_moves(std::string(bytes.begin(),bytes.end())));}
+-        auto archive=structure_mask<0?rmc::mid_encode(games,chosen):
++        auto archive=pawn_rook?rmc::mid_encode_structural(games,{95,7,1}):structure_mask<0?rmc::mid_encode(games,chosen):
+             rmc::mid_encode_structure(games,uint8_t(structure_mask));
+         write(argv[archive_arg],archive.bytes);
+         std::cout<<"profile "<<unsigned(chosen)<<" ("<<rmc::mid_name(chosen)
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -194,3 +194,13 @@
+ target_link_libraries(dmt13_tests PRIVATE rmclib)
+ target_compile_definitions(dmt13_tests PRIVATE RMC_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
+ add_test(NAME dmt13_structure_roundtrip COMMAND dmt13_tests)
++
++# DMT14 pawn/rook feature replacement, same number of categorical parameters.
++foreach(tool r14_matrix r14_loss_trace r14_paired_speed)
++ add_executable(${tool} tools/${tool}.cpp)
++ target_link_libraries(${tool} PRIVATE rmclib)
++endforeach()
++add_executable(dmt14_tests tests/dmt14_tests.cpp)
++target_link_libraries(dmt14_tests PRIVATE rmclib)
++target_compile_definitions(dmt14_tests PRIVATE RMC_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
++add_test(NAME dmt14_structural_roundtrip COMMAND dmt14_tests)

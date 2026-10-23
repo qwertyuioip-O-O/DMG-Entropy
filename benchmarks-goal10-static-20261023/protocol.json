@@ -1,0 +1,60 @@
+{
+  "date": "2026-10-23",
+  "cpu": 0,
+  "binaries": {
+    "baseline": {
+      "path": "/workspace/scratch/6b4a70d873da/work/DMG-Entropy-DMT19/benchmarks-goal10-20261023/anchor/r19_scratch",
+      "sha256": "7c466d55510493aa2366aa310f50583083a161f88304f64e2941089ca9333918"
+    },
+    "stage1": {
+      "path": "/workspace/scratch/6b4a70d873da/work/DMG-Entropy-DMT19/benchmarks-goal10-index-20261023/selected/g10index",
+      "sha256": "750400c51f4efe4385e6f4132396f9111613240d565eff8367305bbc12e2d4d8"
+    },
+    "candidate": {
+      "path": "/workspace/scratch/6b4a70d873da/work/goal10-static-build/g10static",
+      "sha256": "872c463c64bf2b9a9bdcd794eece9d6bbba0246a253ff2985f48c3f468afa0df"
+    }
+  },
+  "datasets": {
+    "r19": "a227d60a7c52ee8bea493f811983416e347a260217487d66ccab0a9ee31c4f94",
+    "r18": "71062f9a12bdd4f6ee67295ee06cb2b38c12a0ab312c3201d26381c8b01f0702",
+    "r17": "fed34cfab01928d5fa94d093a1865bf48f460029dff5c521326f5fbb1a06b18f"
+  },
+  "orders": [
+    [
+      "baseline",
+      "stage1",
+      "candidate",
+      "candidate",
+      "stage1",
+      "baseline"
+    ],
+    [
+      "stage1",
+      "candidate",
+      "baseline",
+      "baseline",
+      "candidate",
+      "stage1"
+    ],
+    [
+      "candidate",
+      "baseline",
+      "stage1",
+      "stage1",
+      "baseline",
+      "candidate"
+    ]
+  ],
+  "blocks_per_dataset": 3,
+  "primary_comparison": "candidate vs frozen goal10 scratch+LTO anchor",
+  "secondary_comparison": "candidate vs supplied retained stage1",
+  "metric": "paired sum-of-two CLI phase wall-time throughput ratios; geometric mean",
+  "scope": "exploratory, one host/core, serial data sessions; no significance claim",
+  "large_variation_gate": {
+    "max_repeat_ratio": 1.25,
+    "rule": "audit every row after full run; return nonzero and block promotion if any same-binary same-data phase repeat exceeds this range; do not trim outliers"
+  },
+  "goal": "at least 10 percent aggregate throughput gain in BOTH encode and decode versus fixed anchor; do not compound gains from different studies",
+  "selection": "compare supplied retained build and candidate directly to fixed anchor; favor larger minimum aggregate gain; screen on requested core, then confirm selected candidate on other core against fixed anchor"
+}

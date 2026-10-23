@@ -1,0 +1,432 @@
+--- a/src/entropy.cpp
++++ b/src/entropy.cpp
+@@ -302,6 +302,44 @@
+ #endif
+     }
+     bool attacked(int sq)const{return(attacked_mask&bit(sq))!=0;}
++};
++// Reuse unaffected own-piece attacks across legal candidate moves. Full keys
++// and occupancy deltas make this exact for captures, EP, castling and promotion.
++struct OwnAttackReuse {
++    std::array<uint64_t,64> attacks{},rays{};
++    static uint64_t piece_attack(const Position& p,int sq) {
++        const auto& t=fast_attack_tables;const int kind=abs_piece(p.board[sq]);
++        const int side=p.board[sq]>0?0:1;
++        if(kind==1)return t.pawn[side][sq];
++        if(kind==2)return t.knight[sq];
++        if(kind==6)return t.king[sq];
++        uint64_t out=0,occ=p.occupied[0]|p.occupied[1];
++        for(int d=kind==3?4:0;d<(kind==4?4:8);++d){
++            auto ray=t.ray[sq][d];auto blockers=ray&occ;
++            if(blockers){int near=(d==0||d==2||d==4||d==6)?std::countr_zero(blockers):63-std::countl_zero(blockers);
++                ray&=~t.ray[near][d];}
++            out|=ray;
++        }
++        return out;
++    }
++    explicit OwnAttackReuse(const Position& p){
++        auto pieces=p.occupied[p.side];
++        while(pieces){int sq=std::countr_zero(pieces);pieces&=pieces-1;
++            attacks[sq]=piece_attack(p,sq);int kind=abs_piece(p.board[sq]);
++            if(kind>=3&&kind<=5)for(int d=kind==3?4:0;d<(kind==4?4:8);++d)rays[sq]|=fast_attack_tables.ray[sq][d];
++        }
++    }
++    uint64_t after(const Position& before,const Position& next)const{
++        const uint64_t changed=(before.occupied[0]|before.occupied[1])^(next.occupied[0]|next.occupied[1]);
++        uint64_t pieces=next.occupied[before.side],out=0;
++        while(pieces){int sq=std::countr_zero(pieces);pieces&=pieces-1;
++            out|=(before.board[sq]!=next.board[sq]||(rays[sq]&changed))?piece_attack(next,sq):attacks[sq];
++        }
++#ifdef DMT_VERIFY_REUSE
++        AttackCache oracle(next);if(out!=oracle.attacked_mask)fail("own attack reuse mismatch");
++#endif
++        return out;
++    }
+ };
+ int tactical_bonus(const Position& p, Move m, const Move* previous, AttackCache& cache) {
+     int kind=abs_piece(p.board[m.from]);
+@@ -573,14 +611,31 @@
+         a.emplace_back(move,1);
+     }
+ };
++// Exact invariant division: reciprocal estimate plus remainder correction.
++// The fallback preserves C++20 portability where 128-bit multiply is absent.
++struct ExactDivisor {
++    uint64_t d;
++#ifdef __SIZEOF_INT128__
++    uint64_t reciprocal;
++    explicit ExactDivisor(uint64_t divisor):d(divisor),reciprocal(UINT64_MAX/divisor){}
++    uint64_t operator()(uint64_t x)const{
++        uint64_t q=uint64_t((__uint128_t(x)*reciprocal)>>64);
++        return q+uint64_t(x-q*d>=d);
++    }
++#else
++    explicit ExactDivisor(uint64_t divisor):d(divisor){}
++    uint64_t operator()(uint64_t x)const{return x/d;}
++#endif
++};
+ V6Weights v6_quantize(const std::array<uint64_t,256>& raw,unsigned n) {
+     if(!n || n>=V6_SCALE)fail("bad V6 alphabet");
+     uint64_t sum=0;
+     for(unsigned i=0;i<n;++i)sum+=raw[i];
+     if(!sum)fail("zero model mass");
+     V6Weights q;
++    const ExactDivisor divide(sum);
+     for(unsigned i=0;i<n;++i) {
+-        q.weights[i]=uint16_t(1 + (raw[i]*(V6_SCALE-n))/sum);
++        q.weights[i]=uint16_t(1 + divide(raw[i]*(V6_SCALE-n)));
+         q.total+=q.weights[i];
+     }
+     if(q.total>=32768)fail("V6 weights too large");
+@@ -1174,7 +1229,7 @@
+ static constexpr uint16_t v8_exp2_lut[257] = {1024,1035,1046,1058,1069,1081,1093,1105,1117,1129,1141,1154,1166,1179,1192,1205,1218,1231,1244,1258,1272,1286,1300,1314,1328,1342,1357,1372,1387,1402,1417,1433,1448,1464,1480,1496,1512,1529,1545,1562,1579,1596,1614,1631,1649,1667,1685,1704,1722,1741,1760,1779,1798,1818,1838,1858,1878,1898,1919,1940,1961,1983,2004,2026,2048,2070,2093,2116,2139,2162,2186,2209,2233,2258,2282,2307,2332,2358,2383,2409,2435,2462,2489,2516,2543,2571,2599,2627,2656,2685,2714,2744,2774,2804,2834,2865,2896,2928,2960,2992,3025,3057,3091,3124,3158,3193,3228,3263,3298,3334,3371,3407,3444,3482,3520,3558,3597,3636,3676,3716,3756,3797,3838,3880,3922,3965,4008,4052,4096,4141,4186,4231,4277,4324,4371,4419,4467,4515,4565,4614,4664,4715,4767,4819,4871,4924,4978,5032,5087,5142,5198,5255,5312,5370,5428,5487,5547,5607,5668,5730,5793,5856,5919,5984,6049,6115,6182,6249,6317,6386,6455,6526,6597,6668,6741,6814,6889,6964,7039,7116,7194,7272,7351,7431,7512,7594,7677,7760,7845,7930,8016,8104,8192,8281,8371,8463,8555,8648,8742,8837,8933,9031,9129,9228,9329,9431,9533,9637,9742,9848,9955,10064,10173,10284,10396,10509,10624,10739,10856,10975,11094,11215,11337,11460,11585,11711,11839,11968,12098,12230,12363,12498,12634,12771,12910,13051,13193,13337,13482,13629,13777,13927,14079,14232,14387,14544,14702,14862,15024,15188,15353,15520,15689,15860,16033,16208,16384};
+ inline unsigned v8_kind(const Position& p,int sq){return unsigned(abs_piece(p.board[sq]));}
+ static uint32_t v8_relations(const Position& p,const Position& after,Move m,
+-                             const Move* previous,const AttackCache& enemy_pre,unsigned ply) {
++                             const Move* previous,const AttackCache& enemy_pre,unsigned ply,const OwnAttackReuse* reuse=nullptr) {
+     const int kind=int(v8_kind(p,m.from));
+     const int victim=abs_piece(p.board[m.to]);
+     const bool ep=(kind==1 && (m.from&7)!=(m.to&7) && victim==0);
+@@ -1183,11 +1238,10 @@
+     const bool danger_from=enemy_pre.attacked(m.from);
+     // Aggregate both attack maps once rather than repeatedly scanning every piece
+     // for each relation. These maps include defended occupied squares.
+-    AttackCache our_after(after);                  // attacks by the moving side
+-    // Only one enemy square is needed; use the exact target query.
+-    const uint64_t our_attacks=our_after.attacked_mask;
++    // The reference path is retained for independent byte comparisons.
++    const uint64_t our_attacks=reuse?reuse->after(p,after):AttackCache(after).attacked_mask;
+     const bool danger_to=after.square_attacked(m.to,after.side);
+-    const bool supported=our_after.attacked(m.to);
++    const bool supported=(our_attacks&bit(m.to))!=0;
+     uint32_t flags=0;
+     auto add=[&](int n,bool ok){if(ok)flags|=(1u<<n);};
+     add(0,danger_from);
+@@ -1200,7 +1254,7 @@
+     add(6,cap && val[actual_victim]>=val[kind]);
+     add(7,cap && enemy_pre.attacked(m.to));
+     int enemy_king=after.king_square(after.side);
+-    bool checking=enemy_king>=0 && our_after.attacked(enemy_king);
++    bool checking=enemy_king>=0 && (our_attacks&bit(enemy_king));
+     add(8,checking);
+     add(9,checking && kind!=6 && kind!=2); // allows discovered checks
+     uint64_t enemy_targets=(after.piece_bits[after.side][1]|
+@@ -1357,13 +1411,19 @@
+         return s;
+     }
+     AttackCache pre_enemy(p);
++#ifndef DMT_REFERENCE_RELATIONS
++    const OwnAttackReuse own_reuse(p);
++    const OwnAttackReuse* reuse=&own_reuse;
++#else
++    const OwnAttackReuse* reuse=nullptr;
++#endif
+     uint32_t running=0;
+     for(unsigned i=0;i<pseudo.size;++i){
+         Position next=p;
+         if(!v09_known_pseudo(p,pseudo.a[i].m,next,pinned,in_check))continue;
+         auto item=pseudo.a[i];
+         s.moves.a[s.moves.size]=item;
+-        s.flags[s.moves.size]=v8_relations(p,next,item.m,prev,pre_enemy,ply);
++        s.flags[s.moves.size]=v8_relations(p,next,item.m,prev,pre_enemy,ply,reuse);
+         ++s.moves.size;
+         running+=item.w;
+     }
+@@ -2105,7 +2165,7 @@
+ inline bool mid_r7_profile(MidProfile profile){return unsigned(profile)>=80 && unsigned(profile)<98;}
+ inline bool mid_r8_profile(MidProfile profile){return unsigned(profile)>=98 && unsigned(profile)<125;}
+ inline bool mid_r9_profile(MidProfile profile){return unsigned(profile)>=125 && unsigned(profile)<189;}
+-inline bool mid_r10_profile(MidProfile profile){return unsigned(profile)>=189 && unsigned(profile)<MID_PROFILE_COUNT;}
++inline bool mid_r10_profile(MidProfile profile){return unsigned(profile)>=189 && unsigned(profile)<243;}
+ // DMT7 builds on the EXACT DMT6 profile 75 pipeline, leaving every old profile untouched.
+ inline MidProfile r7_base(MidProfile profile){return (mid_r7_profile(profile)||mid_r8_profile(profile)||mid_r9_profile(profile))?MidProfile::R6QueenPawnQuietRate4:profile;}
+ inline bool r7_quiet(MidProfile p){return p==MidProfile::R7IntentQuiet||p==MidProfile::R7ContextQuiet;}
+@@ -2387,8 +2447,9 @@
+             unsigned fs=f[i];while(fs){unsigned k=std::countr_zero(fs);fs&=fs-1;sums[k]+=model.weights[i];}
+         }
+         if(quiet_total<=1)return;
++        const ExactDivisor divide(quiet_total);
+         for(unsigned k=0;k<MID_F;++k){
+-            int32_t expected=int32_t((uint64_t(sums[k])*4096+quiet_total/2)/quiet_total);
++            int32_t expected=int32_t(divide(uint64_t(sums[k])*4096+quiet_total/2));
+             int32_t actual=(f[chosen]&(1u<<k))?4096:0;
+             rest[k]+=int32_t(rate)*(actual-expected);
+             int32_t update=rest[k]/4096;
+@@ -2402,8 +2463,9 @@
+     void observe(const std::array<uint16_t,256>& f,const V6Weights& model,unsigned n,unsigned chosen,bool adaptive,unsigned explicit_rate=0){
+         std::array<uint32_t,MID_F> sums{};
+         for(unsigned i=0;i<n;++i){unsigned fs=f[i];while(fs){unsigned k=std::countr_zero(fs);fs&=fs-1;sums[k]+=model.weights[i];}}
++        const ExactDivisor divide(model.total);
+         for(unsigned k=0;k<MID_F;++k){
+-            int32_t expected=int32_t((uint64_t(sums[k])*4096+model.total/2)/model.total);
++            int32_t expected=int32_t(divide(uint64_t(sums[k])*4096+model.total/2));
+             int32_t actual=(f[chosen]&(1u<<k))?4096:0;
+             unsigned rate=explicit_rate?explicit_rate:(adaptive?(seen[k]>24 ? 3:1):2);
+             rest[k]+=int32_t(rate)*(actual-expected);
+@@ -2437,13 +2499,21 @@
+     return {p.board,p.side,p.castling,ep};
+ }
+ uint16_t r3_move_code(Move m){return uint16_t(m.from | (uint16_t(m.to)<<6) | (uint16_t(m.promotion)<<12));}
++struct R3OpenHash {
++    size_t operator()(const R3OpenKey& key)const noexcept{
++        uint64_t h=0x9e3779b97f4a7c15ULL;
++        for(unsigned i=0;i<64;i+=8){uint64_t word;std::memcpy(&word,key.board.data()+i,8);
++            h=(h^word)*0x100000001b3ULL;}
++        return size_t((h^uint64_t(key.side|(key.castling<<8)|(uint32_t(uint8_t(key.en_passant))<<16)))*0x100000001b3ULL);
++    }
++};
+ struct R3OpenHistory {
+     std::vector<std::pair<uint16_t,uint16_t>> moves;
+     uint16_t n=0;
+ };
+ struct R3OpenStore {
+     static constexpr size_t limit=32768;
+-    std::map<R3OpenKey,R3OpenHistory> table;
++    std::unordered_map<R3OpenKey,R3OpenHistory,R3OpenHash> table;
+     std::deque<R3OpenKey> insertion_order;
+     V6Weights predict(const Position& p,const CandidateList& cand,const V6Weights& baseline,unsigned prior,unsigned strength) const {
+         auto found=table.find(r3_open_key(p));
+@@ -2544,6 +2614,7 @@
+ }
+ struct MidContext {
+     V8Context baseline; MidResidual mid,opening,plan;
++    std::array<MidResidual,3> single{},compact{};
+     R3OpenStore open_store;
+     std::array<MidResidual,4> context_residual{};
+     MidResidual rank_residual, positional_residual, r6_residual;
+@@ -3289,8 +3360,10 @@
+ }
+ // DMT10 experimental destination-first calibration. Features are functions of
+ // destination squares / observable positions, not of the chosen move. This
+-// changes destination marginal probability while preserving each destination's
+-// conditional distribution over legal origins. Online learning is causal.
++// Geometry-only signals are constant across origins at a given destination.
++// Tactical signals (check/SEE) can differ by origin; these also change the
++// conditional origin probabilities. This is candidate calibration, not a
++// destination-first arithmetic coding factorization. Online learning is causal.
+ std::array<uint16_t,256> r10_target_features(const Position& p,const MidStep& s,
+                                              const Move* previous,MidProfile profile,unsigned stage){
+     std::array<uint16_t,256> out{};
+@@ -3426,6 +3499,7 @@
+         inv[k]=(uint64_t(1)<<36)/sum;
+     }
+     std::array<uint64_t,256> raw{};
++    const uint64_t base_inv=(uint64_t(1)<<36)/base.total;
+     for(unsigned j=0;j<n;++j){
+         uint64_t w=0;
+         for(unsigned k=0;k<3;++k){
+@@ -3436,19 +3510,43 @@
+         }
+         unsigned prior_weight=ctx.r8_seen[context]==0?prior[4]:g[4];
+         if(p==MidProfile::R8FusedUniform || unsigned(p)>=122)prior_weight=prior[4];
+-        w+=uint64_t(prior_weight)*base.weights[j]*((uint64_t(1)<<36)/base.total);
++        w+=uint64_t(prior_weight)*base.weights[j]*base_inv;
+         raw[j]=w;
+     }
+     return v6_quantize(raw,n);
+ }
+ MidStep mid_step(const Position& p,const Move* previous,const Move* own_previous,
+                  unsigned ply,unsigned stage,MidProfile profile,const MidContext& ctx){
++    const MidProfile r11profile=profile;
++    if(unsigned(profile)>=245)profile=MidProfile::R10ComboTact4Full;
+     const MidProfile r10profile=profile;
+     if(mid_r10_profile(profile))profile=MidProfile::R9MixSharp;
+     const MidProfile r7profile=profile;
+     const bool r8=mid_r8_profile(profile)||mid_r9_profile(profile);
+     profile=r7_base(profile);
+     MidStep result;
++    if(unsigned(r10profile)==243||unsigned(r10profile)==244){
++        result.base=v8_step(p,previous,ply,V8Model::RelationalJoint,ctx.baseline);
++        const unsigned n=result.base.moves.size;
++        for(unsigned i=0;i<n;++i){
++            auto m=result.base.moves.a[i].m;auto f=result.base.flags[i];
++            const int rank=p.side?7-int(m.to>>3):int(m.to>>3);
++            const unsigned file=m.to&7;unsigned features=0;
++            if(f&(1u<<4))features|=1u<<0; // capture
++            if(f&(1u<<6))features|=1u<<1; // favorable material capture
++            if(f&(1u<<8))features|=1u<<2; // check
++            if(f&(1u<<1))features|=1u<<3; // escape attack
++            if(f&(1u<<2))features|=1u<<4; // landing attacked
++            if(f&(1u<<3))features|=1u<<5; // landing supported
++            if(file>=2&&file<=5&&rank>=2&&rank<=5)features|=1u<<6;
++            if(abs_piece(p.board[m.from])==1&&rank>=4)features|=1u<<7;
++            if(own_previous&&m.from==own_previous->to)features|=1u<<8;
++            if(previous&&m.to==previous->to)features|=1u<<9;
++            result.additional[i]=uint16_t(features);
++        }
++        result.coded=mid_residual_cdf(result.base.coded,n,result.additional,ctx.single[stage]);
++        return result;
++    }
+     result.base=v8_step(p,previous,ply,V8Model::RelationalJoint,ctx.baseline);
+     result.coded=result.base.coded;
+     if(r8){ result.r8_active=true;result.r8_experts[0]=result.coded; result.r8_ctx=uint8_t(r4_context(p,result.base)); }
+@@ -3612,7 +3710,20 @@
+         }else if(r8_special(r7profile)){
+             for(unsigned k=0;k<4;++k)result.r8_experts[k]=result.r8_experts[4];
+         }
+-        result.coded=r8_fused(r7profile)?r8_fused_cdf(result,ctx,r7profile):r8_combine(result,ctx,r7profile);
++        if(unsigned(r11profile)>=245){
++            if(unsigned(r11profile)>=247)result.r10_target_signal=r10_target_features(p,result,previous,MidProfile::R10ComboTact4Full,stage);
++            std::array<uint64_t,256> raw{};
++            for(unsigned i=0;i<n;++i){
++                int score=0;
++                for(unsigned k=0;k<3;++k){unsigned mask=result.r8_signal[k][i];
++                    while(mask){unsigned bit=std::countr_zero(mask);mask&=mask-1;score+=ctx.compact[k].theta[bit];}}
++                if(unsigned(r11profile)>=247){unsigned mask=result.r10_target_signal[i];
++                    while(mask){unsigned bit=std::countr_zero(mask);mask&=mask-1;score+=ctx.r10_phase_residual[1].theta[bit];}}
++                score=std::clamp(score,-128,128);
++                raw[i]=uint64_t(result.r8_experts[4].weights[i])*v8_exp2_lut[score+128];
++            }
++            result.coded=v6_quantize(raw,n);
++        }else result.coded=r8_fused(r7profile)?r8_fused_cdf(result,ctx,r7profile):r8_combine(result,ctx,r7profile);
+     }
+     if(mid_r7_profile(r7profile)){
+         result.r7_before=result.coded;
+@@ -3647,7 +3758,7 @@
+             if(r7profile==MidProfile::R7Guard)result.coded=mid_guard(result.coded,n,2);
+         }
+     }
+-    if(mid_r10_profile(r10profile) && stage==1 && r10_phase_on(r10profile,stage)==(unsigned(r10profile)>=217)){
++    if(unsigned(r11profile)<245 && mid_r10_profile(r10profile) && stage==1 && r10_phase_on(r10profile,stage)==(unsigned(r10profile)>=217)){
+         result.r10_before=result.coded;
+         result.r10_target_signal=r10_target_features(p,result,previous,r10profile,stage);
+         const auto& target_model=unsigned(r10profile)>=217?ctx.r10_phase_residual[stage]:ctx.r10_target_residual;
+@@ -3659,12 +3770,19 @@
+ }
+ void mid_observe(MidContext&ctx,const Position&p,const MidStep&s,
+                  unsigned index,unsigned ply,unsigned stage,MidProfile profile){
++    const MidProfile r11profile=profile;
++    if(unsigned(profile)>=245)profile=MidProfile::R10ComboTact4Full;
+     const MidProfile r10profile=profile;
++    if(unsigned(profile)==243||unsigned(profile)==244){
++        ctx.single[stage].observe(s.additional,s.coded,s.base.moves.size,index,false,unsigned(profile)==243?2:4);
++        v8_observe(ctx.baseline,p,s.base,index,ply,V8Model::RelationalJoint);
++        return;
++    }
+     if(mid_r10_profile(profile))profile=MidProfile::R9MixSharp;
+     const MidProfile r7profile=profile;
+     profile=r7_base(profile);
+-    if(mid_r10_profile(r10profile) && stage==1 && (unsigned(r10profile)<217 || r10_phase_on(r10profile,stage))){
+-        // Learn destination marginal from the already-coded distribution.
++    if(unsigned(r11profile)<245 && mid_r10_profile(r10profile) && stage==1 && (unsigned(r10profile)<217 || r10_phase_on(r10profile,stage))){
++        // Learn candidate calibration from the already-coded distribution.
+         if((unsigned(r10profile)>=209 && unsigned(r10profile)<217) || r10profile==MidProfile::R10ComboTact2Gate || r10profile==MidProfile::R10ComboTact4Gate){
+            const int64_t left=int64_t(s.r10_expert.weights[index])*s.r10_before.total;
+            const int64_t right=int64_t(s.r10_before.weights[index])*s.r10_expert.total;
+@@ -3690,7 +3808,11 @@
+     if(mid_r10_profile(r10profile) && stage!=1 && r10_phase_on(r10profile,stage)){
+         ctx.r10_phase_residual[stage].observe(s.r10_target_signal,s.coded,s.base.moves.size,index,false,r10_rate(r10profile,stage));
+     }
+-    if((mid_r8_profile(r7profile)||mid_r9_profile(r7profile)) && stage==1){
++    if(unsigned(r11profile)>=245 && stage==1){
++        if(unsigned(r11profile)>=247)ctx.r10_phase_residual[1].observe(s.r10_target_signal,s.coded,s.base.moves.size,index,false,unsigned(r11profile)==247?2:4);
++        for(unsigned k=0;k<3;++k)ctx.compact[k].observe(s.r8_signal[k],s.coded,s.base.moves.size,index,false,(unsigned(r11profile)==245||unsigned(r11profile)==247)?2:4);
++    }
++    if(unsigned(r11profile)<245 && (mid_r8_profile(r7profile)||mid_r9_profile(r7profile)) && stage==1){
+         r8_update(ctx,s,index,r7profile);
+         if(r8_special(r7profile) && r7profile!=MidProfile::R8SpecialControl){
+             const unsigned context=r8_context_index(r7profile,s.r8_ctx);
+@@ -3889,7 +4011,7 @@
+ "r10-all-tact2","r10-all-geom2",
+ "r10-combo-tact2-mix","r10-combo-tact4-mix","r10-combo-tact2-full","r10-combo-tact4-full",
+ "r10-combo-tact2-gate","r10-combo-tact4-gate","r10-combo-tact1-mix75","r10-combo-tact2-mix25",
+-"r10-combo-tact2-mix75","r10-combo-geom2-mix","r10-combo-hybrid2-mix","r10-combo-tact3-full"};
++"r10-combo-tact2-mix75","r10-combo-geom2-mix","r10-combo-hybrid2-mix","r10-combo-tact3-full","r11-single-rate2","r11-single-rate4","r11-joint30-rate2","r11-joint30-rate4","r11-joint40-rate2","r11-joint40-rate4"};
+ } // anonymous
+ const char* mid_name(MidProfile p){unsigned i=unsigned(p);return i<MID_PROFILE_COUNT?mid_names[i]:"invalid";}
+ V6Archive mid_encode(const std::vector<std::vector<Move>>& games,MidProfile profile,MidDiagnostics* diag,std::vector<MidTrace>* trace){
+@@ -3922,12 +4044,12 @@
+             }
+             coder.put(v6_before(s.coded,ix),s.coded.weights[ix],s.coded.total);
+             mid_observe(ctx,p,s,ix,ply,stage,profile);
+-            if(!p.apply_checked(game[ply]))fail("illegal DMT1 move");
++            p.apply_unchecked(game[ply]); // index_of selected a fully legal candidate
+             own[side]=game[ply];own_valid[side]=true;previous=game[ply];has_prev=true;
+         }
+     }
+     auto payload=total?coder.finish():EntropyPayload{};
+-    std::vector<uint8_t> bytes={'D','M','T',uint8_t(mid_r10_profile(profile)?'A':(mid_r9_profile(profile)?'9':(mid_r8_profile(profile)?'8':(mid_r7_profile(profile)?'7':(mid_r6_profile(profile)?'6':(mid_r5_profile(profile)?'5':(mid_r4_profile(profile)?'4':(mid_r3_profile(profile)?'3':(mid_new_profile(profile)?'2':'1'))))))))),1,uint8_t(profile)};
++    std::vector<uint8_t> bytes={'D','M','T',uint8_t(unsigned(profile)>=243?'B':mid_r10_profile(profile)?'A':(mid_r9_profile(profile)?'9':(mid_r8_profile(profile)?'8':(mid_r7_profile(profile)?'7':(mid_r6_profile(profile)?'6':(mid_r5_profile(profile)?'5':(mid_r4_profile(profile)?'4':(mid_r3_profile(profile)?'3':(mid_new_profile(profile)?'2':'1'))))))))),1,uint8_t(profile)};
+     v6_varint(bytes,uint32_t(games.size()));
+     for(const auto&g:games)v6_varint(bytes,uint32_t(g.size()));
+     v6_varint(bytes,payload.bit_count);
+@@ -3951,7 +4073,8 @@
+         (version=='7' && id>=80 && id<98) ||
+         (version=='8' && id>=98 && id<125) ||
+         (version=='9' && id>=125 && id<189) ||
+-        (version=='A' && id>=189 && id<MID_PROFILE_COUNT);
++        (version=='A' && id>=189 && id<243) ||
++        (version=='B' && id>=243 && id<MID_PROFILE_COUNT);
+     if(!valid)fail("bad DMT header");
+     uint32_t crc=v6_crc(bytes.data(),bytes.size()-4),given=0;
+     for(unsigned k=0;k<4;++k)given|=uint32_t(bytes[bytes.size()-4+k])<<(8*k);
+@@ -3976,7 +4099,7 @@
+             coder.take(before,s.coded.weights[ix],s.coded.total);
+             Move m=s.base.moves.a[ix].m;
+             mid_observe(ctx,p,s,ix,ply,stage,profile);
+-            if(!p.apply_checked(m))fail("illegal DMT1 decoded move");
++            p.apply_unchecked(m); // decoder selected a fully legal candidate
+             own[side]=m;own_valid[side]=true;previous=m;has_prev=true;
+             game.push_back(m);
+         }
+--- a/include/dmg_mid.hpp
++++ b/include/dmg_mid.hpp
+@@ -80,9 +80,9 @@
+     R10ComboTact2Gate=235,R10ComboTact4Gate=236,
+     R10ComboTact1Mix75=237,R10ComboTact2Mix25=238,
+     R10ComboTact2Mix75=239,R10ComboGeom2Mix=240,
+-    R10ComboHybrid2Mix=241,R10ComboTact3Full=242
++    R10ComboHybrid2Mix=241,R10ComboTact3Full=242, R11SingleRate2=243,R11SingleRate4=244,R11Joint30Rate2=245,R11Joint30Rate4=246,R11Joint40Rate2=247,R11Joint40Rate4=248
+ };
+-constexpr unsigned MID_PROFILE_COUNT=243;
++constexpr unsigned MID_PROFILE_COUNT=249;
+ // Preferred research default as of 2026-10-22. Explicit archived profile IDs
+ // remain immutable. Decoder always reads the profile embedded in the header.
+ constexpr MidProfile MID_DEFAULT_PROFILE=MidProfile::R10ComboTact4Full;
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -142,3 +142,23 @@
+ add_executable(dmt_default_tests tests/default_profile_tests.cpp)
+ target_link_libraries(dmt_default_tests PRIVATE rmclib)
+ add_test(NAME dmt_default_profile COMMAND dmt_default_tests)
++
++# Exact legacy output optimization and isolated DMT11 experiments.
++option(DMT_REFERENCE_RELATIONS "Use original per-candidate own attack rebuild" OFF)
++option(DMT_VERIFY_REUSE "Compare every reused attack map with full rebuild" OFF)
++if(DMT_REFERENCE_RELATIONS)
++ target_compile_definitions(rmclib PRIVATE DMT_REFERENCE_RELATIONS)
++endif()
++if(DMT_VERIFY_REUSE)
++ target_compile_definitions(rmclib PRIVATE DMT_VERIFY_REUSE)
++endif()
++add_executable(dmt11_tests tests/dmt11_tests.cpp)
++target_link_libraries(dmt11_tests PRIVATE rmclib)
++target_compile_definitions(dmt11_tests PRIVATE RMC_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
++add_test(NAME dmt11_candidates_roundtrip COMMAND dmt11_tests)
++add_executable(dmt11_audit tools/dmt11_audit.cpp)
++target_link_libraries(dmt11_audit PRIVATE rmclib)
++add_executable(dmt11_kernel_tests tests/dmt11_kernel_tests.cpp src/rmc.cpp)
++target_include_directories(dmt11_kernel_tests PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/include")
++target_compile_definitions(dmt11_kernel_tests PRIVATE DMT_FAST_TACTICAL)
++add_test(NAME dmt11_exact_kernels COMMAND dmt11_kernel_tests)
+--- a/tests/dmt10_tests.cpp
++++ b/tests/dmt10_tests.cpp
+@@ -28,7 +28,7 @@
+    auto m=legal[gen()%legal.size()];require(p.apply_checked(m),"random move illegal");moves.push_back(m);}
+   random.push_back(std::move(moves));}
+  std::vector<unsigned> profiles={14,32,42,49,61,75,82,119,168,182};
+- for(unsigned id=189;id<rmc::MID_PROFILE_COUNT;++id)profiles.push_back(id);
++ for(unsigned id=189;id<243;++id)profiles.push_back(id);
+  for(auto p:profiles){
+   for(const auto& games:std::array<Games,3>{Games{},human,random}){
+     auto arc=mid_encode(games,MidProfile(p));require(mid_decode(arc.bytes)==games,"roundtrip mismatch");
+--- a/README-MAIN.md
++++ b/README-MAIN.md
+@@ -28,3 +28,7 @@
+ Compatibility: an omitted profile in `pack` is only accepted if the archive filename ends in `.dmt`; unknown profile strings cause an error, never a silent fallback.
+ 
+ For research comparisons pass explicit numeric IDs to `dmt9_experiments`; default selection must not confound historical results.
++
++## 2026-10-22 output-preserving optimization and DMT11 experiments
++
++See `README-R11.md`. Default remains 234. IDs 243–248 are isolated DMTB research candidates, not promoted defaults. `reference-dmt10/` contains the immutable source baseline used in comparisons.

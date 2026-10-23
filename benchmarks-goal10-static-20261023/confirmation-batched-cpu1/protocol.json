@@ -1,0 +1,28 @@
+{
+  "date": "2026-10-23",
+  "cpu": 1,
+  "rounds": 4,
+  "order": "alternating ABBA/BAAB",
+  "binaries": {
+    "baseline": {
+      "path": "/workspace/scratch/6b4a70d873da/work/DMG-Entropy-DMT19/benchmarks-goal10-20261023/anchor/r19_scratch",
+      "sha256": "7c466d55510493aa2366aa310f50583083a161f88304f64e2941089ca9333918"
+    },
+    "candidate": {
+      "path": "/workspace/scratch/6b4a70d873da/work/goal10-static-build/g10static",
+      "sha256": "872c463c64bf2b9a9bdcd794eece9d6bbba0246a253ff2985f48c3f468afa0df"
+    }
+  },
+  "datasets": {
+    "r19": "a227d60a7c52ee8bea493f811983416e347a260217487d66ccab0a9ee31c4f94",
+    "r18": "71062f9a12bdd4f6ee67295ee06cb2b38c12a0ab312c3201d26381c8b01f0702",
+    "r17": "fed34cfab01928d5fa94d093a1865bf48f460029dff5c521326f5fbb1a06b18f"
+  },
+  "goal": "both equal-dataset geometric mean gains >=10% versus fixed goal anchor; exploratory same-host confirmation only",
+  "validation": "reuse completed full suite and byte-identity screening for identical hashes; each CLI invocation still warms, verifies repeated bytes and roundtrip",
+  "cgroup_before": "usage_usec 2886961777\nuser_usec 2819490137\nsystem_usec 67471639\nnice_usec 0\nnr_periods 33929\nnr_throttled 0\nthrottled_usec 0\nnr_bursts 0\nburst_usec 0\n",
+  "measurement_unit": "arithmetic mean of exactly two consecutive native CLI speed calls; every call retained",
+  "native_calls": 96,
+  "quality_unit": "48 two-call means, max repeat ratio 1.25; separately audit all native calls without trimming",
+  "scope": "prospective longer-window confirmation of unchanged phase wall-time objective on another core"
+}
